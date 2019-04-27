@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../lib/js/d3.v4.js"></script>
+    <style>
+    .axis path,
+    .axis line{
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+    </style>
+</head>
+<body>
+    <p>1</p>
+    <p id="p2">2</p>
+    <p>3</p>
+</body>
+<script>
+    /*
+    var body = d3.select("body");
+    var p1 = body.select("p");
+
+    var dataset = ["I like dog","I like cat","I like snake"];
+    var ps = body.selectAll("p")
+        .data(dataset)
+        .text(function (d,i) {
+            return i+":"+d
+        });
+
+    p1.text("bbbbb")
+    .style("color","red");
+    */
+    //id命名不能以数字开头!
+    /*
+    var body = d3.select("body");
+    p2 = d3.select("body")
+        .select("#p2")
+
+    //p2 = body.select("#p2")
+
+
+    .style("color","blue");
+    p3=p2.text("sdfsdf")
+    p4 = p3.style("font-size","50px")
+    p4.style("opacity",0.4)
+    hr = p4.insert("hr")
+    p4.insert("p","hr").text("sdf")
+    b = body.insert("p");
+    b.text("houlao").style("color","red");
+    //hr.remove()
+    */
+    /*
+    append只有一个参数，即在该元素组的末尾增加一个标签
+    标签使用append 会自动继承原先标签的样式
+    insert 默认在最后添加元素，但可以接受两个参数，第二个参数表示在该标签位置插入元素
+     remove 移除标签
+     */
+
+    var width = 300;  //画布的宽度
+    var height = 300;   //画布的高度
+
+    var svg = d3.select("body")     //选择文档中的body元素
+        .append("svg")          //添加一个svg元素
+        .attr("width", width)       //设定宽度
+        .attr("height", height);    //设定高度
+
+    var dataset = [ 250 , 210 , 170 , 130 , 90 ];  //数据（表示矩形的宽度）
+    var rectHeight = 25;   //每个矩形所占的像素高度(包括空白)
+    /*
+    rect 四个属性：
+    x：矩形左上角的 x 坐标
+    y：矩形左上角的 y 坐标
+    width：矩形的宽度
+    height：矩形的高度
+     */
+var dataset2 = [1.2, 2.3, 0.9, 1.5, 3.3];
+var min = d3.min(dataset2);
+var max = d3.max(dataset2);
+
+var linear = d3.scaleLinear()
+        .domain([0.5, max])  // 定义域
+        .range([0, 300]);   // 值域
+var yScale = d3.scaleBand()
+    .domain(d3.range(1,dataset.length+1))
+    .rangeRound([0, rectHeight*dataset.length]);
+var axis = d3.axisBottom(linear).ticks(7);
+var yAxis = d3.axisLeft(yScale);
+
+
+svg.selectAll("rect")   //选择svg内所有的矩形
+    .data(dataset2)  //绑定数组
+    .enter()        //指定选择集的enter部分
+    .append("rect") //添加足够数量的矩形元素
+//这段代码以后会常常出现在 D3 的代码中，请务必牢记。目前不深入讨论它的作用机制是怎样的.
+//只需要读者牢记，当有数据，而没有足够图形元素的时候，使用此方法可以添加足够的元素。
+    .attr("x",20)
+    .attr("y",function(d,i){
+         return i * rectHeight;
+    })
+    .attr("width",function(d){
+         //return d;
+        return linear(d);
+    })
+    .attr("height",rectHeight-3)
+    .attr("fill","steelblue")
+    .on("mouseover",function(d,i){
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("fill","yellow");
+    })
+    .on("mouseout",function(d,i){
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("fill","steelblue");
+    });
+svg.attr("id","svg");
+svg.append("g")
+    .attr("class","axis")
+    .attr("transform","translate(20,128)") // 定义坐标轴的位置
+    .call(axis);
+
+//添加y轴
+svg.append("g")
+  .attr("class","axis")
+  .attr("transform","translate(16,0)")
+  .call(yAxis);
+
+d3.select("body")
+    .insert("div","#svg")
+    .text("I am title")
+    .style("width", String(width)+"px")       //设定宽度
+    .attr("align","center");
+/*
+// http://wiki.jikexueyuan.com/project/d3wiki/scale.html
+1. 线性比例尺
+var dataset = [1.2, 2.3, 0.9, 1.5, 3.3];
+var min = d3.min(dataset);
+var max = d3.max(dataset);
+
+var linear = d3.scale.linear()
+        .domain([min, max])  // 定义域
+        .range([0, 300]);   // 值域
+
+linear(0.9);    //返回 0
+linear(2.3);    //返回 175
+linear(3.3);    //返回 300
+//d3.scale.linear() 的返回值，是可以当做函数来使用的。因此，才有这样的用法：linear(0.9)。
+ */
+</script>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../lib/js/d3.v4.js"></script>
+    <style>
+    .axis path,
+    .axis line{
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+    </style>
+</head>
+<body>
+
+</body>
+<script>
+//画布大小
+var width = 400;
+var height = 400;
+
+//在 body 里添加一个 SVG 画布
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var circle1 = svg.append("circle")
+        .attr("cx", 100)
+        .attr("cy", 100)
+        .attr("r", 45)
+        .style("fill","green");
+
+//在1.5秒（1500毫秒）内将圆心坐标由100变为300，
+//将颜色从绿色变为红色
+circle1.transition()
+    .duration(1500)
+    .attr("cx", 300)
+    .style("fill","red");
+
+var circle2 = svg.append("circle")
+        .attr("cx", 100)
+        .attr("cy", 250)
+        .attr("r", 45)
+        .style("fill","green");
+
+//在2秒（2000毫秒）内将圆心坐标由100变为300
+//将颜色从绿色变为红色
+//将半径从45变成25
+//过渡方式采用bounce（在终点处弹跳几次）
+circle2.transition()
+    .duration(2000)
+    .attr("cx", 300)
+    .style("fill","red")
+    .attr("r", 25);
+    //.ease("bounce");
+var Gdata = null;
+var index = 0;
+var data2 = d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_connectedscatter.csv"
+    , function(data) {
+    Gdata = data;
+    alert("haha\r\n" + ++index)
+})
+
+</script>
+</html>

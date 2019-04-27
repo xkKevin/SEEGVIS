@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SEEGVIS</title>
+    <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
+</head>
+<body>
+<div id="app">
+    <form method="post" action="/" enctype="multipart/form-data">
+        {% csrf_token %}
+        请上传mat格式文件：<input type="file" accept=".mat" name="up_file"/>
+        <br>
+        EZ: <input type="text" name="EZ">
+        PZ: <input type="text" name="PZ">
+        NIZ: <input type="text" name="NIZ">
+        <input type="submit" value="提交"/>
+    </form>
+    {% if date_time %}
+    Start time:<span id="start_time">{{ date_time }}</span>
+    {% endif %}
+    <br/>
+    信号1（s1）：<input type="text" id="s1">
+    信号2（s2）：<input type="text" id="s2">
+    <input type="button" onclick="getH2()" value="获取H2">
+    <p id="h2Data"></p>
+</div>
+</body>
+<script>
+    function getH2() {
+        var s1 = $("#s1").val();
+        var s2 = $("#s2").val();
+        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
+                if(result["result"] === true){
+                    //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+                    var s1_s2 = result["s1_s2"]
+                    document.getElementById("h2Data").innerText = s1_s2[3]
+                }else {
+                    alert("Failed!\n message:"+result["msg"])
+                }
+        });
+    }
+</script>
+</html>
