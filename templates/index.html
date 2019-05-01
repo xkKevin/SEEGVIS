@@ -5,10 +5,10 @@
     <title>SEEGVIS</title>
     <script src="../static/js/jquery.min.js"></script>
     <script src="../static/js/bootstrap.min.js"></script>
-    <script src="../static/js/visChart.js"></script>
     <link href="../static/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.bootcss.com/echarts/3.8.5/echarts.min.js"></script>
-    <script src="http://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <script src="../static/js/echarts-gl.min.js"></script>
+    <script src="../static/js/visChart.js"></script>
     <style type="text/css">
         input{
             display:inline-block!important;
@@ -73,6 +73,9 @@
                     {% if not fc_info %}
                         请上传mat格式文件：<input type="file" accept=".mat" name="up_file"/>
                         <input type="submit" value="提交"/><br>
+                    {% else %}
+                        更改数据文件：<input type="file" accept=".mat" name="up_file"/>
+                        <input type="submit" value="更改"/><br>
                     {% endif %}
                 </form>
                 <table align="center" class="table tab1 table-bordered" style="text-align: center;width: 80%">
@@ -101,7 +104,7 @@
         </div>
         <div id="collapseTwo" class="panel-collapse collapse">
             <div class="panel-body" id="electrodes">
-                请上传对应电极点的空间坐标：<input type="file" accept=".csv" id="coordinate_file" onchange="showCoordinate(this.files)"/>
+                请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" onchange="showCoordinate(this.files,{{ fc_info.electrode_names }})"/>
             </div>
         </div>
     </div>
@@ -182,22 +185,27 @@
 </div>
 </body>
 <script>
+    var one_elect = new Set();
+    var one_elect_co = {};
     function getH2(fc_info) {
+        if(!fc_info){
+            alert("请先上传.mat数据文件!");
+            return;
+        }
         var s1 = $("#s1").val();
         var s2 = $("#s2").val();
         $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var s1_s2 = result["s1_s2"];
-                    var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]]
-
-                    var lens = fc_info["section_iterations"]
-                    var times = d3.range(fc_info["start"],fc_info["start"]+lens)
+                    var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]];
+                    var lens = fc_info["section_iterations"];
+                    var times = d3.range(fc_info["start"],fc_info["start"]+lens);
                     var data = [];
                     for(i=0;i<lens;i++){
                         data.push({"time":times[i],"h2":s1_s2[0][i]})
                     }
-                    linechart(data,signal,lens,s1_s2[2],s1_s2[3]);
+                    linechart(data,signal,lens,s1_s2[2],s1_s2[3],twoElectCO(signal,one_elect_co));
                 }else {
                     alert("Failed!\n message:"+result["msg"])
                 }
@@ -218,7 +226,11 @@
                 }
         });
     }
-    function showCoordinate(files) {
+    function showCoordinate(files,electrode_names) {
+        if(!electrode_names){
+            alert("请先上传.mat数据文件!");
+            return;
+        }
         //console.log(files);
         if (files[0]) {
             var reader = new FileReader();
@@ -236,10 +248,20 @@
             reader.onload = function (f) {
                 //var result = document.getElementById("result");
                 //显示文件
+                one_elect.clear();
+                for(var i=0;i<electrode_names.length;i++){
+                    var two_e = electrode_names[i].split("-");
+                    one_elect.add(two_e[0]);
+                    one_elect.add(two_e[1]);
+                }
                 var co_data={"ez":[],"pz":[],"niz":[]};
                 var relArr = this.result.split("\r\n");
                 var regp = new RegExp(".*,\".*,.*\"$");
                 if (!$.isEmptyObject(relArr) && relArr.length > 1) {
+                    for (var cokey in one_elect_co){
+                        //delete one_elect_co.cokey; 清空字典，只能使用下面的方法
+                        delete one_elect_co[cokey];
+                    }
                     var title_key = relArr[0].split(",");
                     for (var key = 1, len = relArr.length; key < len; key++) {
                         var values = relArr[key];
@@ -253,12 +275,16 @@
                             for (var j=1;j<objArr.length;j++){
                                 obj.push(objArr[j]);
                             }
-                            if (objArr[0] == "ez"){
+                            if (objArr[0] === "ez"){
                                 co_data.ez.push(obj);
-                            } else if (objArr[0] == "pz"){
+                            } else if (objArr[0] === "pz"){
                                 co_data.pz.push(obj);
-                            }else if (objArr[0] == "niz"){
+                            }else if (objArr[0] === "niz"){
                                 co_data.niz.push(obj);
+                            }
+
+                            if (isInSet(obj[3],one_elect)){
+                                one_elect_co[obj[3]] = strArr2floatArr(obj.slice(0,-1));
                             }
                         }
                     }
@@ -267,8 +293,45 @@
                 var newM = $("<div id='codination' style='width: 90%;height:500px;' align='center'></div>");
                 newM.appendTo($("#electrodes"));
                 scatter3D(co_data,'codination');
+                /*
+                var s1 = $("#s1").val();
+                var s2 = $("#s2").val();
+                if (typeof(s1)==="number"&&typeof(s2)==="number"){
+
+                }
+                */
             };
         }
+    }
+    function isInSet(item,set) {
+        for (var si of set){
+            if (item === si){
+                return true;
+            }
+        }
+        return false;
+    }
+    function strArr2floatArr(strArr) {
+        var floatArr = [];
+        for (var sai of strArr){
+            floatArr.push(parseFloat(sai));
+        }
+        return floatArr;
+    }
+    function twoElectCO(signal,co) {
+        /*
+         返回电极对的中心坐标
+         signal的格式例如： ['C4-C5', 'C6-C7']
+          */
+        var s1 = signal[0].split('-');
+        var s2 = signal[1].split('-');
+        return [centerPoint(co[s1[0]],co[s1[1]]),centerPoint(co[s2[0]],co[s2[1]])]
+    }
+    function centerPoint(co1,co2) {
+        if (!(co1&&co2)){
+            return null;
+        }
+        return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 </script>
 
@@ -276,129 +339,5 @@
     <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script>
 
-
-/*
-d3.select("#my_dataviz")
-.insert("div","svg")
-.text("折线图")
-.style("font-size",30)
-.style("width","460px")
-.attr("align","center")
-.style("fill","magenta");
-*/
-
-//Read the data
-function linechart(data,signal,lens,nwd,wd) {
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
-
-    // set the dimensions and margins of the graph
-    var margin = {top: 10, right: 100, bottom: 30, left: 50},
-        width = 700 - margin.left - margin.right,
-        height = 400 - margin.top - margin.bottom;
-
-    // append the svg object to the body of the page
-    var dataviz = d3.select("#my_dataviz");
-    dataviz.select("svg").remove();
-    var svg = dataviz
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform",
-            "translate(" + margin.left + "," + margin.top + ")");
-
-    // List of groups (here I have one group per column)
-    // var allGroup = ['C4-C5', 'C6-C7', 'C7-C8', 'C81-C82']
-
-    // A color scale: one color for each group
-    var myColor = d3.scaleOrdinal()
-        .domain(signal)
-        .range(d3.schemeSet2);
-
-    // Add X axis --> it is a date format
-    var x = d3.scaleLinear()
-    // .domain([0,10])
-        .domain([data[0].time, data[lens - 1].time])
-        .range([0, width]);
-    svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
-
-    // Add Y axis
-    var dataFilter = data.map(function(d){return d.h2 });
-    var max_h2 = d3.max(dataFilter) * 1.1;
-    var max_y = max_h2 > 1 ? 1 : max_h2;
-    var y = d3.scaleLinear()
-        .domain([0, max_y])
-        .range([height, 0]);
-    svg.append("g")
-        .call(d3.axisLeft(y));
-
-    // Initialize line with group a
-    var line = svg
-        .append('g')
-        .append("path")
-        .datum(data)
-        .attr("d", d3.line()
-            .x(function (d) {
-                //alert(d.time)
-                return x(d.time)
-            })
-            .y(function (d) {
-                return y(d.h2)
-            })
-        )
-        .attr("stroke", function (d) {
-            //return myColor(signal[0])
-            return "yellow"
-        })
-        .style("stroke-width", 3)
-        .style("fill", "none");
-    svg.selectAll("dot")
-        .data(data)
-        .enter().append("circle")
-        .attr("r", 3)
-        .attr("cx", function (d) {
-            return x(d.time);
-        })
-        .attr("cy", function (d) {
-            return y(d.h2);
-        })
-        .on("mouseover", function (d) {
-            div.transition()
-                .duration(200)
-                .style("opacity", .9);
-            div.html(d.h2.toFixed(4))
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-        })
-        .on("mouseout", function (d) {
-            div.transition()
-                .duration(500)
-                .style("opacity", 0);
-        });
-    dataviz.select("table").remove();
-    var table = dataviz.append("table");
-    table.attr("id", "line_tab");
-    table.attr("class", "table tab1 table-bordered");
-    table.append("caption").text(signal[0]+" -- "+signal[1]);
-    var table_data = [["加权方向性",wd],["非加权方向性",nwd],["中值",d3.median(dataFilter)],["均值",d3.mean(dataFilter)],["最大值",d3.max(dataFilter)],["最小值",d3.min(dataFilter)]];
-    var my_tr = table.append("tbody")
-        .selectAll("mytr")
-        .data(table_data)
-        .enter()
-        .append("tr");
-    var td1 = my_tr.append("td")
-        .style("font-size","28px;")
-        .text(function (d) {
-            return d[0]
-        });
-    var td2 = my_tr.append("td")
-        .text(function (d) {
-            return d[1].toFixed(4)
-        })
-}
 </script>
 </html>

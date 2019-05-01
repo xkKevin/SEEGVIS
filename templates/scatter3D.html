@@ -30,24 +30,24 @@
         addChart();
     });
     var data=[
-            ["12", "23", "43"],
-            ["120", "73", "43"],
-            ["43", "545", "65"],
-            ["92", "23", "33"]
+            ["12", "23", "43","a"],
+            ["120", "73", "43","a"],
+            ["43", "545", "65","a"],
+            ["92", "23", "33","a"]
         ];
     function addChart () {
         var myChart = echarts.init(document.getElementById('main'));
         console.log(myChart);
         var data1 = data;
         var data2 = [
-            [17, 25, 55],
-            [38, 320, 88],
-            [78, 403, 96]
+            [17, 25, 55,"a"],
+            [38, 320, 88,"a"],
+            [78, 403, 96,"a"]
         ];
         var data3 = [
-            [45, 183, 120],
-            [12, 25, 77],
-            [107, 321, 44]
+            [45, 183, 120,"a"],
+            [12, 25, 77,"a"],
+            [107, 321, 44,"a"]
         ];
 
         myChart.setOption({
@@ -103,7 +103,7 @@
             series: [{
                 type: 'scatter3D',
                 name:"EZ",
-                //dimensions: ['x', 'y', 'z'],//显示框信息
+                dimensions: ['x', 'y', 'z','electrode'],//显示框信息
 
                 /*
                 encode: {
@@ -133,7 +133,7 @@
             {
                 type: 'scatter3D',
                 name:"PZ",
-                //dimensions: ['x', 'y', 'z'],//显示框信息
+                dimensions: ['x', 'y', 'z','electrode'],//显示框信息
 
                 /*
                 encode: {
@@ -163,7 +163,7 @@
             {
                 type: 'scatter3D',
                 name:"NIZ",
-                //dimensions: ['x', 'y', 'z'],//显示框信息
+                dimensions: ['xxx', 'y', 'z','electrode'],//显示框信息
 
                 /*
                 encode: {
