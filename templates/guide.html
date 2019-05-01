@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Guide</title>
+    <link rel="icon" href="/static/dat/eeg3.jpg">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+        .bold{
+            {#margin-top:7px;#}
+            {#*margin: 0;#}
+            {#border: 0;#}
+            background-color: blueviolet;
+            height: 3px
+        }
+        img {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="panel-group" id="accordion">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h4 class="panel-title" style="text-align: center;">
+                    <font style="font-size: x-large;cursor: default;">SEEGVIS 系统指南</font>
+                    <span class="badge" style="float: right;font-size:18px; margin-right: 80px;cursor: pointer;"
+                          onclick="$(window).attr('location', '{% url 'index' %}');">
+                        返回系统
+                    </span>
+                </h4>
+
+            </div>
+            <div id="collapseOne">
+                <div class="panel-body">
+                    <div style="width:250px;float:left; text-align: center;margin-left: 30px;margin-top: 20px;" data-spy="affix">
+                        <a class="list-group-item active">该系统主要分为四个部分：</a>
+                        <a href="#info" class="list-group-item">基本信息</a>
+                        <a href="#ordination" class="list-group-item">空间坐标</a>
+                        <a href="#line" class="list-group-item">折线图</a>
+                        <a href="#violin" class="list-group-item">小提琴图</a>
+                    </div>
+                    <div style="margin-left: 340px;margin-right: 80px;">
+                        <div id="info">
+                            <hr class="bold"/>
+                            <h3>
+                                <span style="display: inline-block; width: 60%;">基本信息</span>
+                            </h3>
+                            <hr/>
+                            <p>用户首先需要上传.mat格式的数据文件，该数据文件可以由Anywave软件分析工具得到。</p>
+                            <p>
+                                点击“提交”按钮，上传成功后，将在“基本信息”栏下会得到该数据文件的信息，如所选择的电极（electrode_names），记录脑电图的总时间段（time），
+                                分析脑电图的起始时间（start），脑电图的滤波频段（filters：有无滤波、Delta至Gamma波，及Ripple、Fast Ripple等。括号内的数据表示滤波频段）等。
+                                如下图所示：
+                            </p>
+                            <img src="/static/dat/info.png" width="100%">
+                        </div>
+                        <div id="ordination">
+                            <hr class="bold"/>
+                            <h3>
+                                <span style="display: inline-block; width: 60%;">空间坐标</span>
+                            </h3>
+                            <hr/>
+                            <p>用户在此区域可上传电极点的空间坐标的记录文件，文件存储格式为&nbsp;.csv,&nbsp;.txt。</p>
+                            <p>空间坐标文件的记录格式必须为<font color="red">首行分别为“type,x,y,z,electrode”，其余行分别对应位置填写，数据之间以逗号分隔，可以有空格。</font>下图为示例：</p>
+                            <img src="/static/dat/co_format.png" style="margin-left: 20px;">
+                            <img src="/static/dat/co_format2.png" style="margin-left: 20px;">
+                            <p>推荐将数据文件保存为&nbsp;.csv格式，因为Excel可以查看该文件格式（如右上图所示）</p>
+                            <p>上传空间坐标文件之后，便可得到该文件记录的坐标数据所对应的三维散点图，如下所示：</p>
+                            <img src="/static/dat/ordination.png" width="90%">
+                            <p>用户可以对此图进行<font color="red">旋转、放大、缩小</font>,以便更好地观察电极点的坐标。当鼠标触动电极点时，会出现该电极点的详细信息。</p>
+                        </div>
+                        <div id="line">
+                            <hr class="bold"/>
+                            <h3>
+                                <span style="display: inline-block; width: 60%;">折线图</span>
+                            </h3>
+                            <hr/>
+                            <p>用户在此区域需输入s1与s2信号，并点击提交，成功后便可查看这两组电极之间的功能连接性（FC）随时间变化的折线图，图右边的表格为计算的详细信息
+                                （如加权方向性：计算方向性时将所对应的h2值作为权重；非加权方向性：未考虑h2值，直接计算方向性）。</p>
+                            <img src="/static/dat/line.png" width="90%">
+                            <p>信号1（S1）的值为&nbsp;1&nbsp;代表“electrode_names”中的第&nbsp;2&nbsp;组电极点（'C6-C7'），
+                                信号2（S2）的值为&nbsp;2&nbsp;代表“electrode_names”中的第&nbsp;3&nbsp;组电极点（'C7-C8'）。（因为数组下标是从&nbsp;0&nbsp;开始计算）</p>
+                            <p>当鼠标触动点时，会显示该点的具体值（h2值）。</p>
+                            <p>若用户没有输入坐标位置（即没有进行第二步），则无法计算这两组信号的空间几何距离。表格的后三行将显示“坐标未定义！”</p>
+                        </div>
+                        <div id="violin">
+                            <hr class="bold"/>
+                            <h3>
+                                <span style="display: inline-block; width: 60%;">小提琴图</span>
+                            </h3>
+                            <hr/>
+                            <p>该部分正在开发中……</p>
+                            <p><a href="{% url 'chart' %}">点我可查看更多图形！</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+</body>
+</html>

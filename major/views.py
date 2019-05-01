@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, JsonResponse, FileResponse
-from django.urls import reverse
+from django.http import JsonResponse
 import os
 import scipy.io as sio
+import json
 import numpy as np
 import datetime
 
@@ -12,8 +12,8 @@ matData = None
 h2_lag_direction = []
 
 def index(request):
-    global matData
     if request.method == "POST":
+        global matData
         file_obj = request.FILES.get("up_file")
         f1 = open(file_obj.name, "wb")
         for i in file_obj.chunks():
@@ -45,8 +45,8 @@ def index(request):
         nniz = request.POST.get('NIZ')
         print(nez, npz, nniz)
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
-        return render(request, "index.html", {"fc_info": fc_info,"file_name":file_name})
-    return render(request, "index.html", {"date_time": None})
+        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name)})
+    return render(request, "index.html",{"file_name":json.dumps(False)})
 
 
 def getH2(request):
@@ -182,4 +182,8 @@ def to_lists(str_num):
 
 
 def chart(request):
-    return render(request, "chart.html", {"date_time": None})
+    return render(request, "chart.html")
+
+
+def guide(request):
+    return render(request, "guide.html")

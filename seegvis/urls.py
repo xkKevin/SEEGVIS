@@ -23,4 +23,5 @@ urlpatterns = [
     url(r'^getH2/$',views.getH2, name="getH2"),
     url(r'^fcAnalyse/$',views.fcAnalyse, name="fcAnalyse"),
     url(r'^chart/$',views.chart, name="chart"),
+    url(r'^guide/$',views.guide, name="guide"),
 ]

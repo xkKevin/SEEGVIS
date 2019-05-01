@@ -253,7 +253,7 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
     table.attr("class", "table tab1 table-bordered");
     table.append("caption").text(signal[0]+" -- "+signal[1]);
     var table_data = [["加权方向性",wd],["非加权方向性",nwd],["中值",d3.median(dataFilter)],["均值",d3.mean(dataFilter)],["最大值",d3.max(dataFilter)],["最小值",d3.min(dataFilter)],
-    [signal[0]+"空间坐标",twoElectCo[0]],[signal[1]+"空间坐标",twoElectCo[1]],["空间几何距离",distance(twoElectCo[0],twoElectCo[1])]];
+    [signal[0]+" 空间坐标",twoElectCo[0]],[signal[1]+" 空间坐标",twoElectCo[1]],["空间几何距离",distance(twoElectCo[0],twoElectCo[1])]];
     var my_tr = table.append("tbody")
         .selectAll("mytr")
         .data(table_data)

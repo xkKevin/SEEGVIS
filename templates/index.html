@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>SEEGVIS</title>
-    <script src="../static/js/jquery.min.js"></script>
-    <script src="../static/js/bootstrap.min.js"></script>
-    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
-    <script src="../static/js/echarts.min.js"></script>
-    <script src="../static/js/echarts-gl.min.js"></script>
-    <script src="../static/js/visChart.js"></script>
+    <link rel="icon" href="/static/dat/eeg3.jpg">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/js/echarts.min.js"></script>
+    <script src="/static/js/echarts-gl.min.js"></script>
+    <script src="/static/js/visChart.js"></script>
     <style type="text/css">
         input{
             display:inline-block!important;
@@ -58,12 +59,16 @@
 
 </head>
 <body>
+{#<div id="upper" style="width:100%;height: 50px;">#}
+{#    <img src="/static/dat/seeg.png" width="100%" height="100%">#}
+{#</div>#}
 <!-- 折叠 -->
 <div class="panel-group" id="accordion">
     <div class="panel panel-default">
         <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
             <h4 class="panel-title">
                 <label>基本信息</label>
+                <span class="badge" id="systemGuide" style="float: right;font-size:18px; margin-right: 30px;cursor: pointer;">系统指南</span>
             </h4>
         </div>
         <div id="collapseOne" class="panel-collapse collapse in">
@@ -187,6 +192,23 @@
 <script>
     var one_elect = new Set();
     var one_elect_co = {};
+    var init = false;
+    //阻止默认行为，stopPropagation(); -- 阻止元素冒泡事件
+    $("#coordinate_file").click(function(e){
+        /* js与Django交互的条件：
+        1、views.py中返回的函数中的值要用 json.dumps()处理
+        2、在网页上要加一个 safe 过滤器
+         */
+        init = {{ file_name|safe }};
+        if (!init){
+            alert("请先上传.mat数据文件!");
+            e.preventDefault();
+        }
+    });
+    $("#systemGuide").click(function(e){
+        e.stopPropagation();
+        $(window).attr('location', '{% url 'guide' %}');
+    });
     function getH2(fc_info) {
         if(!fc_info){
             alert("请先上传.mat数据文件!");
@@ -227,10 +249,6 @@
         });
     }
     function showCoordinate(files,electrode_names) {
-        if(!electrode_names){
-            alert("请先上传.mat数据文件!");
-            return;
-        }
         //console.log(files);
         if (files[0]) {
             var reader = new FileReader();
@@ -290,14 +308,13 @@
                     }
                 }
                 $("#codination").remove();
-                var newM = $("<div id='codination' style='width: 90%;height:500px;' align='center'></div>");
+                var newM = $("<div id='codination' style='width: 85%;height:500px;' align='center'></div>");
                 newM.appendTo($("#electrodes"));
                 scatter3D(co_data,'codination');
                 /*
                 var s1 = $("#s1").val();
                 var s2 = $("#s2").val();
                 if (typeof(s1)==="number"&&typeof(s2)==="number"){
-
                 }
                 */
             };
@@ -334,7 +351,6 @@
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 </script>
-
     <script src="../static/js/d3.v4.js"></script>
     <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script>
