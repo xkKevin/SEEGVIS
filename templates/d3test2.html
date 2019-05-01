@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <script src="../lib/js/d3.v4.js"></script>
+    <script src="../static/js/d3.v4.js"></script>
     <style>
     .axis path,
     .axis line{
@@ -19,24 +19,37 @@
     </style>
 </head>
 <body>
-<button onclick="f1()">f1</button>
+
 </body>
 <script>
-var dataset = [ 3 , 6 , 9 , 12 , 15 ];
-var dataset2 = d3.range(10,15);
-//选择body中的p元素
-var p = d3.select("body").selectAll("dot").data(dataset).enter().append("p");
-
-p.text(function(d){
-    return "before " + d;
-});
-
-function f1(){
-    d3.select("body").selectAll("p").data(dataset2).text(function(d){
-    return "after " + d;
-});
-}
-
+var w = 500;
+var h = 100;
+var dataset = [
+    [45, 20,12], [25, 67,22], [85, 21,31], [67, 88,19]
+];
+var svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+svg.selectAll("circle")
+       .data(dataset)
+       .enter()
+       .append("circle")
+       .attr("cx", function(d) {
+            return d[0];
+       })
+       .attr("cy", function(d) {
+            return d[1];
+       })
+    .attr("cz", function(d) {
+            return d[2];
+       })
+        .attr("r",5);
+/*
+       .attr("r", function(d) {
+            return Math.sqrt(h - d[1]);
+       });
+       */
     /*
 //画布大小
 var width = 400;

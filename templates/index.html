@@ -3,42 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <title>SEEGVIS</title>
-    <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="../static/js/jquery.min.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
+    <script src="../static/js/visChart.js"></script>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/echarts/3.8.5/echarts.min.js"></script>
+    <script src="http://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.min.js"></script>
+    <style type="text/css">
+        input{
+            display:inline-block!important;
+        }
+        .tab1 > tbody > tr:nth-child(2n-1) > td,
+        .tab1 > tbody > tr:nth-child(2n-1) > th {
+            {#background-color: #afd9ee;#}
+             background-color: rgba(0,255,255,0.1);
+         }
+
+        .tab1 > tbody > tr:nth-child(2n) > td,
+        .tab1 > tbody > tr:nth-child(2n) > th {
+            {#background-color: #8EB2D2;#}
+            background-color: rgba(120,100,130,0.1);
+         }
+        .axis path,
+        .axis line{
+            fill:none;
+            stroke:black;
+            shape-rendering:crispEdges;
+        }
+        div.tooltip {
+            position: absolute;
+            text-align: center;
+            width: 60px;
+            height: 28px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        #line_tab{
+            display: inline-block;
+            width: 400px;
+            text-align: center;
+        }
+        #line_tab caption{
+            font-size: 26px;
+            font-weight: bold;
+            color: orangered;
+            width: 400px;
+            text-align: center;
+        }
+    </style>
+
 </head>
 <body>
-<div id="app">
-    <form method="post" action="/" enctype="multipart/form-data">
-        {% csrf_token %}
-        请上传mat格式文件：<input type="file" accept=".mat" name="up_file"/>
-        <br>
-        EZ: <input type="text" name="EZ">
-        PZ: <input type="text" name="PZ">
-        NIZ: <input type="text" name="NIZ">
-        <input type="submit" value="提交"/>
-    </form>
-    {% if date_time %}
-    Start time:<span id="start_time">{{ date_time }}</span>
-    {% endif %}
-    <br/>
-    信号1（s1）：<input type="text" id="s1">
-    信号2（s2）：<input type="text" id="s2">
-    <input type="button" onclick="getH2()" value="获取H2">
-    <p id="h2Data"></p>
+<!-- 折叠 -->
+<div class="panel-group" id="accordion">
+    <div class="panel panel-default">
+        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+            <h4 class="panel-title">
+                <label>基本信息</label>
+            </h4>
+        </div>
+        <div id="collapseOne" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <form method="post" action="/" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% if not fc_info %}
+                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file"/>
+                        <input type="submit" value="提交"/><br>
+                    {% endif %}
+                </form>
+                <table align="center" class="table tab1 table-bordered" style="text-align: center;width: 80%">
+                    {% if fc_info %}
+                    <caption style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 10px;">
+                        当前上传的数据文件为：<font color="red">{{ file_name }}</font>
+                    </caption>
+                    {% endif %}
+                    <tbody>
+                    {% for key,value in fc_info.items %}
+                        <tr class="active">
+                            <td>{{ key }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-success">
+        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
+            <h4 class="panel-title">
+                <label>空间坐标</label>
+            </h4>
+        </div>
+        <div id="collapseTwo" class="panel-collapse collapse">
+            <div class="panel-body" id="electrodes">
+                请上传对应电极点的空间坐标：<input type="file" accept=".csv" id="coordinate_file" onchange="showCoordinate(this.files)"/>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-info">
+        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
+            <h4 class="panel-title">
+                <label>折线图</label>
+            </h4>
+        </div>
+        <div id="collapseThree" class="panel-collapse collapse">
+            <div class="panel-body">
+                <table>
+                    <tbody>
+                    <tr>
+                        <td style="padding:15px 10px">
+                            <div class="input-group">
+                                <span class="input-group-addon">信号1（S1）：</span>
+                                <input class="form-control" type="text" id="s1">
+                            </div>
+                        </td>
+                        <td style="padding:15px 10px">
+                            <div class="input-group">
+                                <span class="input-group-addon">信号2（S2）：</span>
+                                <input class="form-control" type="text" id="s2">
+                            </div>
+                        </td>
+                        <td>
+                            <label class="btn btn-success" onclick="getH2({{ fc_info }})">提交</label>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <!-- Create a div where the graph will take place -->
+                <div id="my_dataviz"></div>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-warning">
+        <div class="panel-heading"  data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
+            <h4 class="panel-title">
+                <label>小提琴图</label>
+            </h4>
+        </div>
+        <div id="collapseFour" class="panel-collapse collapse">
+            <div class="panel-body">
+                <div id="analyse">
+                    <table>
+                        <tbody>
+                        <tr>
+                            <td style="padding:15px 10px">
+                                <div class="input-group">
+                                    <span class="input-group-addon">EZ: </span>
+                                    <input class="form-control" type="text" id="EZ">
+                                </div>
+                            </td>
+                            <td style="padding:15px 10px">
+                                <div class="input-group">
+                                    <span class="input-group-addon">PZ: </span>
+                                    <input class="form-control" type="text" id="PZ">
+                                </div>
+                            </td>
+                            <td style="padding:15px 10px">
+                                <div class="input-group">
+                                    <span class="input-group-addon">NIZ: </span>
+                                    <input class="form-control" type="text" id="NIZ">
+                                </div>
+                            </td>
+                            <td>
+                                <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 <script>
-    function getH2() {
+    function getH2(fc_info) {
         var s1 = $("#s1").val();
         var s2 = $("#s2").val();
         $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
-                    var s1_s2 = result["s1_s2"]
-                    document.getElementById("h2Data").innerText = s1_s2[3]
+                    var s1_s2 = result["s1_s2"];
+                    var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]]
+
+                    var lens = fc_info["section_iterations"]
+                    var times = d3.range(fc_info["start"],fc_info["start"]+lens)
+                    var data = [];
+                    for(i=0;i<lens;i++){
+                        data.push({"time":times[i],"h2":s1_s2[0][i]})
+                    }
+                    linechart(data,signal,lens,s1_s2[2],s1_s2[3]);
                 }else {
                     alert("Failed!\n message:"+result["msg"])
                 }
         });
     }
+    function fcAnalyse(){
+        var ez = $("#EZ").val();
+        var pz = $("#PZ").val();
+        var niz = $("#NIZ").val();
+        // alert(ez+"\n"+pz+"\n"+niz)
+        $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz},function(result, statue){
+                if(result["result"] === true){
+                    //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+                    var zones = result["zones"];
+                    alert(zones)
+                }else {
+                    alert(result["msg"])
+                }
+        });
+    }
+    function showCoordinate(files) {
+        //console.log(files);
+        if (files[0]) {
+            var reader = new FileReader();
+            reader.readAsText(files[0]);
+            /*
+            reader.onload = function () {
+                globaldata = this.result;
+            }
+            reader.onloadend = function (evt) {
+                if(evt.target.readyState == FileReader.DONE){
+                    globaldata.push(csv2array(reader.result.toString()));
+                }
+            };
+            */
+            reader.onload = function (f) {
+                //var result = document.getElementById("result");
+                //显示文件
+                var co_data={"ez":[],"pz":[],"niz":[]};
+                var relArr = this.result.split("\r\n");
+                var regp = new RegExp(".*,\".*,.*\"$");
+                if (!$.isEmptyObject(relArr) && relArr.length > 1) {
+                    var title_key = relArr[0].split(",");
+                    for (var key = 1, len = relArr.length; key < len; key++) {
+                        var values = relArr[key];
+                        if (regp.test(values)) {
+                            alert("文件内容中有英文逗号，麻烦修改后再上传，含有英文逗号的内容是：" + values);
+                            return;
+                        }
+                        if (!$.isEmptyObject(values)) {
+                            var obj = [];
+                            var objArr = values.split(",");
+                            for (var j=1;j<objArr.length;j++){
+                                obj.push(objArr[j]);
+                            }
+                            if (objArr[0] == "ez"){
+                                co_data.ez.push(obj);
+                            } else if (objArr[0] == "pz"){
+                                co_data.pz.push(obj);
+                            }else if (objArr[0] == "niz"){
+                                co_data.niz.push(obj);
+                            }
+                        }
+                    }
+                }
+                $("#codination").remove();
+                var newM = $("<div id='codination' style='width: 90%;height:500px;' align='center'></div>");
+                newM.appendTo($("#electrodes"));
+                scatter3D(co_data,'codination');
+            };
+        }
+    }
+</script>
+
+    <script src="../static/js/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script>
+
+
+/*
+d3.select("#my_dataviz")
+.insert("div","svg")
+.text("折线图")
+.style("font-size",30)
+.style("width","460px")
+.attr("align","center")
+.style("fill","magenta");
+*/
+
+//Read the data
+function linechart(data,signal,lens,nwd,wd) {
+    var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 100, bottom: 30, left: 50},
+        width = 700 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var dataviz = d3.select("#my_dataviz");
+    dataviz.select("svg").remove();
+    var svg = dataviz
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    // List of groups (here I have one group per column)
+    // var allGroup = ['C4-C5', 'C6-C7', 'C7-C8', 'C81-C82']
+
+    // A color scale: one color for each group
+    var myColor = d3.scaleOrdinal()
+        .domain(signal)
+        .range(d3.schemeSet2);
+
+    // Add X axis --> it is a date format
+    var x = d3.scaleLinear()
+    // .domain([0,10])
+        .domain([data[0].time, data[lens - 1].time])
+        .range([0, width]);
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+    // Add Y axis
+    var dataFilter = data.map(function(d){return d.h2 });
+    var max_h2 = d3.max(dataFilter) * 1.1;
+    var max_y = max_h2 > 1 ? 1 : max_h2;
+    var y = d3.scaleLinear()
+        .domain([0, max_y])
+        .range([height, 0]);
+    svg.append("g")
+        .call(d3.axisLeft(y));
+
+    // Initialize line with group a
+    var line = svg
+        .append('g')
+        .append("path")
+        .datum(data)
+        .attr("d", d3.line()
+            .x(function (d) {
+                //alert(d.time)
+                return x(d.time)
+            })
+            .y(function (d) {
+                return y(d.h2)
+            })
+        )
+        .attr("stroke", function (d) {
+            //return myColor(signal[0])
+            return "yellow"
+        })
+        .style("stroke-width", 3)
+        .style("fill", "none");
+    svg.selectAll("dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("r", 3)
+        .attr("cx", function (d) {
+            return x(d.time);
+        })
+        .attr("cy", function (d) {
+            return y(d.h2);
+        })
+        .on("mouseover", function (d) {
+            div.transition()
+                .duration(200)
+                .style("opacity", .9);
+            div.html(d.h2.toFixed(4))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mouseout", function (d) {
+            div.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+    dataviz.select("table").remove();
+    var table = dataviz.append("table");
+    table.attr("id", "line_tab");
+    table.attr("class", "table tab1 table-bordered");
+    table.append("caption").text(signal[0]+" -- "+signal[1]);
+    var table_data = [["加权方向性",wd],["非加权方向性",nwd],["中值",d3.median(dataFilter)],["均值",d3.mean(dataFilter)],["最大值",d3.max(dataFilter)],["最小值",d3.min(dataFilter)]];
+    var my_tr = table.append("tbody")
+        .selectAll("mytr")
+        .data(table_data)
+        .enter()
+        .append("tr");
+    var td1 = my_tr.append("td")
+        .style("font-size","28px;")
+        .text(function (d) {
+            return d[0]
+        });
+    var td2 = my_tr.append("td")
+        .text(function (d) {
+            return d[1].toFixed(4)
+        })
+}
 </script>
 </html>

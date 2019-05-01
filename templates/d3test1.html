@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <script src="../lib/js/d3.v4.js"></script>
+    <script src="../static/js/d3.v4.js"></script>
     <style>
     .axis path,
     .axis line{
@@ -24,6 +24,9 @@
     <p>3</p>
 </body>
 <script>
+    var body = d3.select("body");
+    var p1 = body.select("p");
+    p1.remove();
     /*
     var body = d3.select("body");
     var p1 = body.select("p");

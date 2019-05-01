@@ -34,8 +34,8 @@
 
 <!-- Create a div where the graph will take place -->
 <div id="my_dataviz"></div>
-    <script src="http://d3js.org/d3.v4.js"></script>
-<script src="../lib/js/linechart.js"></script>
+    <script src="../static/js/d3.v4.js"></script>
+<script src="../static/js/linechart.js"></script>
     <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script>
 
@@ -64,10 +64,10 @@ d3.select("#my_dataviz")
 .attr("align","center")
 .style("fill","magenta");
 
-
+var dataglobal = null
 //Read the data
 d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_connectedscatter.csv", function(data) {
-
+    dataglobal = data
     // List of groups (here I have one group per column)
     var allGroup = ["valueA", "valueB", "valueC"]
 
@@ -106,7 +106,9 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/da
       .append("path")
         .datum(data)
         .attr("d", d3.line()
-          .x(function(d) { return x(d.time) })
+          .x(function(d) {
+              return x(d.time) }
+          )
           .y(function(d) { return y(d.valueA) })
         )
         .attr("stroke", function(d){ return myColor("valueA") })

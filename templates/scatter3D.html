@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ECharts三维散点图</title>
+    <script src="../static/js/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/echarts/3.8.5/echarts.min.js"></script>
+    <script src="http://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.min.js"></script>
+</head>
+<body>
+<input id="btn" type="button" value="图表删除，重新加载" />
+<input type="button" value="push" onclick="testPush()"/>
+</body>
+<script>
+    //$("#main").remove();
+    //var newM = $("<div id='main' style='width: 80%;height:600px; '></div>");
+    //newM.appendTo($("body"));
+    //addChart ();
+    function testPush(){
+        var a = [];
+        a.push(1);
+        a.push(2);
+        alert(a.length)
+        console.log(a)
+    };
+    $("#btn").on("click", function () {
+        $("#main").remove();
+        var newM = $("<div id='main' style='width: 90%;height:500px; '></div>");
+        newM.appendTo($("body"));
+        addChart();
+    });
+    var data=[
+            ["12", "23", "43"],
+            ["120", "73", "43"],
+            ["43", "545", "65"],
+            ["92", "23", "33"]
+        ];
+    function addChart () {
+        var myChart = echarts.init(document.getElementById('main'));
+        console.log(myChart);
+        var data1 = data;
+        var data2 = [
+            [17, 25, 55],
+            [38, 320, 88],
+            [78, 403, 96]
+        ];
+        var data3 = [
+            [45, 183, 120],
+            [12, 25, 77],
+            [107, 321, 44]
+        ];
+
+        myChart.setOption({
+             title : {
+                text: '各电极点在大脑的空间几何位置',
+                 y:"bottom",
+                 x:"center"
+            },
+            tooltip: {},
+            xAxis3D: {
+                name: "x",
+                type: 'value',
+//                min: 'dataMin',//获取数据中的最值
+//                max: 'dataMax'
+            },
+            yAxis3D: {
+                name: "y",
+                type: 'value',
+//                min: 'dataMin',
+//                max: 'dataMax'
+            },
+            zAxis3D: {
+                name: "z",
+                type: 'value',
+//                min: 'dataMin',
+//                max: 'dataMax'
+            },
+            grid3D: {
+                axisLine: {
+                    lineStyle: {
+                        color: '#000'//轴线颜色
+                    }
+                },
+                axisPointer: {
+                    lineStyle: {
+                        color: '#f00'//坐标轴指示线
+                    },
+                    show: false//不坐标轴指示线
+                },
+                viewControl: {
+//                     autoRotate: true,//旋转展示
+//                     projection: 'orthographic'
+                    beta: 5
+                },
+                boxWidth: 180,
+                boxHeight: 90,
+                boxDepth: 90,
+                top: -50
+            },
+            legend: {
+                data:['EZ','PZ',"NIZ"]
+            },
+            series: [{
+                type: 'scatter3D',
+                name:"EZ",
+                //dimensions: ['x', 'y', 'z'],//显示框信息
+
+                /*
+                encode: {
+                   x: [3, 1, 5],      // 表示维度 3、1、5 映射到 x 轴。
+                   y: 2,              // 表示维度 2 映射到 y 轴。
+                   tooltip:['a','c','b'], // 表示维度 3、2、4 会在 tooltip 中显示。
+                   label: 'a'           // 表示 label 使用维度 3。
+               },
+               */
+                data: data1,
+                symbolSize: 10,//点的大小
+                // symbol: 'triangle',
+                itemStyle: {
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.8)'//边框样式
+                },
+                emphasis: {
+                    itemStyle: {
+                        color: '#ccc'//高亮
+                    }
+                },
+                itemStyle: {
+                    //color: "#f00"
+                    color: "red"
+                }
+            },
+            {
+                type: 'scatter3D',
+                name:"PZ",
+                //dimensions: ['x', 'y', 'z'],//显示框信息
+
+                /*
+                encode: {
+                   x: [3, 1, 5],      // 表示维度 3、1、5 映射到 x 轴。
+                   y: 2,              // 表示维度 2 映射到 y 轴。
+                   tooltip:['a','c','b'], // 表示维度 3、2、4 会在 tooltip 中显示。
+                   label: 'a'           // 表示 label 使用维度 3。
+               },
+               */
+                data: data2,
+                symbolSize: 10,//点的大小
+                // symbol: 'triangle',
+                itemStyle: {
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.8)'//边框样式
+                },
+                emphasis: {
+                    itemStyle: {
+                        color: '#ccc'//高亮
+                    }
+                },
+                itemStyle: {
+                    //color: "#f00"
+                    color: "yellow"
+                }
+            },
+            {
+                type: 'scatter3D',
+                name:"NIZ",
+                //dimensions: ['x', 'y', 'z'],//显示框信息
+
+                /*
+                encode: {
+                   x: [3, 1, 5],      // 表示维度 3、1、5 映射到 x 轴。
+                   y: 2,              // 表示维度 2 映射到 y 轴。
+                   tooltip:['a','c','b'], // 表示维度 3、2、4 会在 tooltip 中显示。
+                   label: 'a'           // 表示 label 使用维度 3。
+               },
+               */
+                data: data3,
+                symbolSize: 10,//点的大小
+                // symbol: 'triangle',
+                itemStyle: {
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.8)'//边框样式
+                },
+                emphasis: {
+                    itemStyle: {
+                        color: '#ccc'//高亮,
+                    }
+                },
+                itemStyle: {
+                    //color: "#f00"
+                    color: "blue"
+                }
+            },
+            ],
+            backgroundColor: "#fff"
+        });
+    }
+</script>
+</html>
