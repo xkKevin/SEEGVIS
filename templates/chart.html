@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title></title>
-    <link rel="stylesheet" type="text/css" href="/static/css/distrochart.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/distrochart2.css">
 
     <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
     <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
@@ -25,10 +25,10 @@
 
 <div class="chart-wrapper" id="chart-distro1"></div>
 
-<script src="../static/js/distrochart.js" charset="utf-8"></script>
+<script src="/static/js/distrochart2.js" charset="utf-8"></script>
 <script type="text/javascript">
     var chart1;
-    d3.csv('../static/dat/data.csv', function(error, data) {
+    d3.csv('/static/dat/data.csv', function(error, data) {
         data.forEach(function (d) {d.value = +d.value;});
 
         console.log(data)

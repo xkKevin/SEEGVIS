@@ -24,4 +24,5 @@ urlpatterns = [
     url(r'^fcAnalyse/$',views.fcAnalyse, name="fcAnalyse"),
     url(r'^chart/$',views.chart, name="chart"),
     url(r'^guide/$',views.guide, name="guide"),
+    url(r'^ViolinBox/$',views.ViolinBox, name="ViolinBox"),
 ]

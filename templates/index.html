@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>SEEGVIS</title>
-    <link rel="icon" href="/static/dat/eeg3.jpg">
+    <link rel="icon" href="/static/data/eeg3.jpg">
     <script src="/static/js/jquery.min.js"></script>
     <script src="/static/js/bootstrap.min.js"></script>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <script src="/static/js/echarts.min.js"></script>
     <script src="/static/js/echarts-gl.min.js"></script>
     <script src="/static/js/visChart.js"></script>
+
+    <script src="../static/js/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
     <style type="text/css">
         input{
             display:inline-block!important;
@@ -60,7 +63,7 @@
 </head>
 <body>
 {#<div id="upper" style="width:100%;height: 50px;">#}
-{#    <img src="/static/dat/seeg.png" width="100%" height="100%">#}
+{#    <img src="/static/data/seeg.png" width="100%" height="100%">#}
 {#</div>#}
 <!-- 折叠 -->
 <div class="panel-group" id="accordion">
@@ -68,7 +71,7 @@
         <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
             <h4 class="panel-title">
                 <label>基本信息</label>
-                <span class="badge" id="systemGuide" style="float: right;font-size:18px; margin-right: 30px;cursor: pointer;">系统指南</span>
+                <span class="badge" id="systemGuide" style="float: right;font-size:18px; margin-right: 50px;cursor: pointer;" title="查看使用说明">系统指南</span>
             </h4>
         </div>
         <div id="collapseOne" class="panel-collapse collapse in">
@@ -180,9 +183,14 @@
                             <td>
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
+                            <td >
+                                <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_analyse.csv">点击下载FC分析结果</a>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
+                    <!-- Create a div where the graph will take place -->
+                    <div id="violinBwt"></div>
                 </div>
             </div>
         </div>
@@ -216,6 +224,10 @@
         }
         var s1 = $("#s1").val();
         var s2 = $("#s2").val();
+        if (!(s1&&s2)){
+            alert("请输入两电极信号！");
+            return;
+        }
         $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
@@ -234,20 +246,34 @@
         });
     }
     function fcAnalyse(){
+        init = {{ file_name|safe }};
+        if (!init){
+            alert("请先上传.mat数据文件!");
+            return;
+        }
         var ez = $("#EZ").val();
         var pz = $("#PZ").val();
         var niz = $("#NIZ").val();
+        if (!(ez || pz || niz)){
+            alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+            return;
+        }
+        var fc_result = document.getElementById("fc_result");
+        fc_result.style.display = "none";
         // alert(ez+"\n"+pz+"\n"+niz)
         $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var zones = result["zones"];
-                    alert(zones)
+                    alert(zones);
+                    fc_result.style.display = "inline";
+                    violinBwt();
                 }else {
                     alert(result["msg"])
                 }
         });
     }
+    violinBwt();
     function showCoordinate(files,electrode_names) {
         //console.log(files);
         if (files[0]) {
@@ -351,8 +377,6 @@
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 </script>
-    <script src="../static/js/d3.v4.js"></script>
-    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script>
 
 </script>

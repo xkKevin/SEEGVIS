@@ -5,11 +5,12 @@ import scipy.io as sio
 import json
 import numpy as np
 import datetime
-
+import csv
 # Create your views here.
 
 matData = None
 h2_lag_direction = []
+electrode_names = []
 
 def index(request):
     if request.method == "POST":
@@ -34,7 +35,8 @@ def index(request):
         maxLag = matData['aw_maxLag'][0][0]
         start = matData['aw_start'][0][0]
         section_iterations = matData['section_iterations'][0][0]
-        electrode_names = []
+        global electrode_names
+        electrode_names.clear()
         for i in matData['electrode_names'][0]:
             electrode_names.append(i[0])
         fc_info = {"electrode_names": electrode_names,"filters": filters,"time": date_time, "windowSize": windowSize,
@@ -76,17 +78,99 @@ def getH2(request):
 
 
 def fcAnalyse(request):
-
+    '''
+    区域内与区域间的FC分析
+    :param request:
+    :return:
+    '''
     if request.method == "POST":
         try:
             ez = to_lists(request.POST.get('ez'))
             pz = to_lists(request.POST.get('pz'))
             niz = to_lists(request.POST.get('niz'))
         except Exception as e:
-            return JsonResponse({'result': False, 'msg': "区域格式输入不正确！\n正确格式为：1-3,6"})
+            return JsonResponse({'result': False, 'msg': "输入格式不正确！\n正确格式应如：1-3,6"})
 
+        # 判断是否越界 （空数组为false）
+        elec_len = len(electrode_names)
+        if (ez and ez[-1]>=elec_len):
+            return JsonResponse({'result': False, 'msg': "EZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
+        if (pz and pz[-1]>=elec_len):
+            return JsonResponse({'result': False, 'msg': "PZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
+        if (niz and niz[-1]>=elec_len):
+            return JsonResponse({'result': False, 'msg': "NIZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
+
+        fileHeader = ["zone", "electrodes", "h2", "lag", "nwd", "wd"]
+        ez_in = cal_fc_in(ez,elec_len,"ez")
+        pz_in = cal_fc_in(pz,elec_len,"pz")
+        niz_in = cal_fc_in(niz,elec_len,"niz")
+        ez_pz = cal_fc_bwt(ez,pz,elec_len,"ez_pz")
+        ez_niz = cal_fc_bwt(ez,niz,elec_len,"ez_niz")
+        pz_niz = cal_fc_bwt(pz,niz,elec_len,"pz_niz")
+        # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
+        fc_analyse = open("static/data/fc_analyse.csv","w",newline="")
+        writer = csv.writer(fc_analyse)
+        writer.writerow(fileHeader)
+        for i in ez_in:
+            writer.writerow(i)
+        for i in pz_in:
+            writer.writerow(i)
+        for i in niz_in:
+            writer.writerow(i)
+        for i in ez_pz:
+            writer.writerow(i)
+        for i in ez_niz:
+            writer.writerow(i)
+        for i in pz_niz:
+            writer.writerow(i)
+        fc_analyse.close()
         return JsonResponse({'result': True, 'zones': [ez,pz,niz]})
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
+
+
+def cal_fc_in(signals,n,zone):
+    '''
+    计算区域内FC
+    :param：signals为数组，如[0,2,3]，n表示总电极数，zone表示：ez,pz,niz
+    :return：如果signals为空数组，则该函数也返回空数组；返回格式例如：["ez","C5-C6--C7-C8",h2,lag,nwd,wd]
+    '''
+    result = []
+    slen = len(signals)
+    global h2_lag_direction
+    for i in range(slen - 1):
+        for j in range(i+1,slen):
+            tmp = [zone,str(electrode_names[signals[i]])+"--"+str(electrode_names[signals[j]])]
+            tmp.extend(h2_lag_direction[position(signals[i],signals[j],n)])
+            result.append(tmp)
+    return result
+
+
+def cal_fc_bwt(s1,s2,n,zone):
+    '''
+    计算区域内FC
+    :param：s1,s2均为数组，如[0,2,3]，n表示总电极数，zone表示：ez_pz,ez_niz,pz_niz
+    :return：如果s1或s2为空数组，则该函数也返回空数组；返回格式例如：["ez_pz","C5-C6--C7-C8",h2,lag,nwd,wd]
+    '''
+    result = []
+    global h2_lag_direction
+    for i in s1:
+        for j in s2:
+            tmp = [zone,str(electrode_names[i]) + "--" + str(electrode_names[j])]
+            tmp.extend(h2_lag_direction[position(i, j, n)])
+            result.append(tmp)
+    return result
+
+
+def position(s1,s2,n):
+    '''
+    :param：s1与s2为两电极数字（[0,n-1]之间）,且s1小于s2
+    n表示总电极数
+    :return：返回s1与s2的位置
+    '''
+    p = 0
+    for i in range(s1):
+        p+=n-1-i
+    return p+s2-s1-1
 
 
 def h2_max_direction(h2, lag, s1=0, s2=1):
@@ -135,6 +219,7 @@ def h2_max_direction(h2, lag, s1=0, s2=1):
 def all_h2_max_direction(h2, lag):
     enum = h2.shape[0]  # 电极点的数量
     global h2_lag_direction  # h2_max, lag_max, nw_direction, w_direction
+    h2_lag_direction.clear()
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
             h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2))
@@ -177,8 +262,13 @@ def to_lists(str_num):
             result.extend([i for i in range(int(tmp[0]), int(tmp[1]) + 1)])
         else:
             result.append(int(tmp[0]))
-    # return result
-    return list(set(result)) # 列表去重，并且从小到大排序
+    '''
+    return result  # 未去重，原始数据
+    return list(set(result)) # 列表去重
+    '''
+    result = list(set(result))
+    result.sort()
+    return result  # 列表去重，并且从小到大排序
 
 
 def chart(request):
@@ -187,3 +277,7 @@ def chart(request):
 
 def guide(request):
     return render(request, "guide.html")
+
+
+def ViolinBox(request):
+    return render(request, "ViolinBoxPlot.html")
