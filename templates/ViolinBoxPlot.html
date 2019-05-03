@@ -6,7 +6,7 @@
     <!--http://stanford.edu/~mwaskom/software/seaborn/generated/seaborn.violinplot.html-->
     <link rel="stylesheet" type="text/css" href="/static/css/distrochart.css">
     <!--<script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>-->
-    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="/static/js/d3.v3.min.js" charset="utf-8"></script>
     <script src="/static/js/distrochart.js" charset="utf-8"></script>
 </head>
 <body>
@@ -36,14 +36,13 @@
     var currentColor = 'dark';
     var currentViolinColor = 'dark';
     var chart1;
-    d3.csv('/static/dat/data.csv', function(error, data) {
+    d3.csv('/static/data/fc_analyse.csv', function(error, data) {
 
         data.forEach(function (d) {
             d.value = +d.value;
         });
 
-        console.log(data)
-        chart1 = makeDistroChart(data, 'date', 'value');
+        chart1 = makeDistroChart(data, 'zone', 'wd');
         chart1.bind("#chart-distro1",{chartSize:{height:420, width:960}, constrainExtremes:false, axisLabels: {xAxis: 'Years', yAxis: 'Values'}});
         chart1.renderViolinPlot({violinWidth:90, colors:["#555"]});
         chart1.renderBoxPlot({boxWidth:20, showOutliers:false});
