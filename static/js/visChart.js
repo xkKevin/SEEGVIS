@@ -158,11 +158,7 @@ function scatter3D(co_data,name) {
     });
 }
 
-
 function linechart(data,signal,lens,nwd,wd,twoElectCo) {
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
 
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 100, bottom: 30, left: 50},
@@ -301,17 +297,13 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
 
 
 function violinBwt() {
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip2")
-        .style("opacity", 0);
-
     // set the dimensions and margins of the graph
-    var margin = {top: 10, right: 100, bottom: 30, left: 50},
+    var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
-    var violin = d3.select("#violinBwt");
+    var violin = d3.select("#violinLeft");
     violin.selectAll("*").remove(); //清空所有子元素
     violin.append("h3")
         .html("区域内与区域间 FC 小提琴总图")
@@ -404,10 +396,10 @@ function violinBwt() {
           } ) // Translation on the right to be at the group position
           .on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div.transition()
+            div2.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
+            div2.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
                 "<br>均值："+Math.round(d3.mean(datebyType[d.key])*10000)/10000+
                 "<br>最大值："+Math.round(d3.max(datebyType[d.key])*10000)/10000+
                 "<br>最小值："+Math.round(d3.min(datebyType[d.key])*10000)/10000)
@@ -415,7 +407,7 @@ function violinBwt() {
                 .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", function (d) {
-            div.transition()
+            div2.transition()
                 .duration(500)
                 .style("opacity", 0);
         }).append("path")
@@ -431,9 +423,6 @@ function violinBwt() {
                 .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
             );
 
-      var div2 = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
       // Add individual points with jitter
       var jitterWidth = 40;
       svg
@@ -448,15 +437,15 @@ function violinBwt() {
           .attr("stroke", "white")
           .on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
+            div.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div2.html(d3.median(d.h2.slice(1,-1).split(",")).toFixed(4))
+            div.html(d3.median(d.h2.slice(1,-1).split(",")).toFixed(4))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
           .on("mouseout", function (d) {
-            div2.transition()
+            div.transition()
                 .duration(500)
                 .style("opacity", 0);
             })
@@ -470,14 +459,14 @@ function violinBwt() {
           })
 
     });
-    violin.append("div").attr("id","subviolinFC")
-        .style("display","inline");
-    var chartButton = violin.append("div").attr("id","chartButton");
+
+    var chartButton = violin.append("div").attr("id","chartButton")
+        .style("margin-top","10px");
     violin.append("div").attr("id","directionality");
     chartButton.append("button")
         .attr("class","btn btn-primary")
         .attr("title","显示加权方向性小提琴图")
-        .style("margin-left","15px")
+        .style("margin-left","-15px")
         .html("加权方向性")
         .on("click",function () {
             directionality(outData,"wd")
@@ -505,14 +494,10 @@ function violinBwt() {
 
 function directionality(data,type) {
     /*
-    type ：wd：表示加权方向性；nwd：表示非加权方向性
+       outData=data;
      */
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip2")
-        .style("opacity", 0);
-
     // set the dimensions and margins of the graph
-    var margin = {top: 10, right: 100, bottom: 30, left: 50},
+    var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,
         height = 400 - margin.top - margin.bottom;
     var direction = d3.select("#directionality");
@@ -602,10 +587,10 @@ function directionality(data,type) {
           } ) // Translation on the right to be at the group position
           .on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div.transition()
+            div2.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
+            div2.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
                 "<br>均值："+Math.round(d3.mean(datebyType[d.key])*10000)/10000+
                 "<br>最大值："+Math.round(d3.max(datebyType[d.key])*10000)/10000+
                 "<br>最小值："+Math.round(d3.min(datebyType[d.key])*10000)/10000)
@@ -613,7 +598,7 @@ function directionality(data,type) {
                 .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", function (d) {
-            div.transition()
+            div2.transition()
                 .duration(500)
                 .style("opacity", 0);
         })
@@ -642,29 +627,37 @@ function directionality(data,type) {
           .attr("r", 4)
           .style("fill", function(d){ return(myColor(d[type]))})
           .attr("stroke", "white")
+          .on("mouseover", function (d) {
+            div.transition()
+                .duration(300)
+                .style("opacity", .9);
+            div.html(parseFloat(d[type]).toFixed(4))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+          .on("mouseout", function (d) {
+            div.transition()
+                .duration(500)
+                .style("opacity", 0);
+            });
 }
 
 function subviolinFC(data,zone,electrodes) {
     /*
-    type ：wd：表示加权方向性；nwd：表示非加权方向性
-     */
-    var div = d3.select("body").append("div")
-        .attr("class", "tooltip2")
-        .style("opacity", 0);
 
+     */
     // set the dimensions and margins of the graph
-    var margin = {top: 10, right: 100, bottom: 30, left: 50},
+    var margin = {top: 10, right: 50, bottom: 30, left: 50},
         width = 300 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
-    var sub_violin = d3.select("#subviolinFC");
+    var sub_violin = d3.select("#violinRight");
     sub_violin.selectAll("*").remove();
-    sub_violin.style("width","300px");
     var title = zone.toUpperCase()+"："+electrodes+" FC 小提琴图";
-    // sub_violin.append("h5")
-    //     .html(title)
-    //     .style("width","300px")
-    //     .style("display","inline")
-    //     .attr("align","center");
+    sub_violin.append("h5")
+        .html(title)
+        .style("margin-top","30px")
+        .style("width","300px")
+        .attr("align","center");
     var svg = sub_violin
       .append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -738,10 +731,10 @@ function subviolinFC(data,zone,electrodes) {
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
           .on("mouseover", function (d) {
-            div.transition()
+            div2.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html("中值："+Math.round(d3.median(dataFilter)*10000)/10000+
+            div2.html("中值："+Math.round(d3.median(dataFilter)*10000)/10000+
                 "<br>均值："+Math.round(d3.mean(dataFilter)*10000)/10000+
                 "<br>最大值："+Math.round(d3.max(dataFilter)*10000)/10000+
                 "<br>最小值："+Math.round(d3.min(dataFilter)*10000)/10000)
@@ -749,14 +742,21 @@ function subviolinFC(data,zone,electrodes) {
                 .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", function (d) {
-            div.transition()
+            div2.transition()
                 .duration(500)
                 .style("opacity", 0);
         }).append("path")
             .datum(function(d){ return d.value})     // So now we are working bin per bin
             .style("stroke", "none")
             .style("fill",function (d) {
-                return myColorViolin(count++%6);
+                switch (zone) {
+                    case "ez": return myColorViolin(0);
+                    case "pz": return myColorViolin(1);
+                    case "niz": return myColorViolin(2);
+                    case "ez_pz": return myColorViolin(3);
+                    case "ez_niz": return myColorViolin(4);
+                    case "pz_niz": return myColorViolin(5);
+                }
             })
             .attr("d", d3.area()   // 这里的x0表示底，x1表示高，y表示宽
                 .x0( xNum(0) )
@@ -777,4 +777,17 @@ function subviolinFC(data,zone,electrodes) {
           .attr("r", 4)
           .style("fill", function(d){ return(myColor(d.h2))})
           .attr("stroke", "white")
+          .on("mouseover", function (d) {
+            div.transition()
+                .duration(300)
+                .style("opacity", .9);
+            div.html(parseFloat(d.h2).toFixed(4))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+          .on("mouseout", function (d) {
+            div.transition()
+                .duration(500)
+                .style("opacity", 0);
+            });
 }

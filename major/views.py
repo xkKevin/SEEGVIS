@@ -42,10 +42,6 @@ def index(request):
         fc_info = {"electrode_names": electrode_names,"filters": filters,"time": date_time, "windowSize": windowSize,
                    "step": step, "maxLag": maxLag, "start": start, "section_iterations": section_iterations}
 
-        nez = request.POST.get('EZ')
-        npz = request.POST.get('PZ')
-        nniz = request.POST.get('NIZ')
-        print(nez, npz, nniz)
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
         return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name)})
     return render(request, "index.html",{"file_name":json.dumps(False)})

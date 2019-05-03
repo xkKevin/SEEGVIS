@@ -41,6 +41,7 @@
                         <a href="#ordination" class="list-group-item">空间坐标</a>
                         <a href="#line" class="list-group-item">折线图</a>
                         <a href="#violin" class="list-group-item">小提琴图</a>
+                        <a href="#other" class="list-group-item">其他</a>
                     </div>
                     <div style="margin-left: 340px;margin-right: 80px;">
                         <div id="info">
@@ -57,6 +58,7 @@
                             </p>
                             <img src="/static/data/info.png" width="100%">
                             <p>在对一份数据文件分析完毕之后，用户可更改数据文件，点击“更改”按钮，“基本信息”将会发生变化，后三部分的图形数据也将会消失。</p>
+                            <p>注意：若没有上传数据文件，则后三部分的分析功能皆用不了！</p>
                         </div>
                         <div id="ordination">
                             <hr class="bold"/>
@@ -83,7 +85,7 @@
                                 （如加权方向性：计算方向性时将所对应的h2值作为权重；非加权方向性：未考虑h2值，直接计算方向性。方向性为正值说明S1信号驱动S2信号，反之相反。）</p>
                             <img src="/static/data/line.png" width="90%">
                             <p>信号1（S1）的值为&nbsp;1&nbsp;代表“electrode_names”中的第&nbsp;2&nbsp;组电极点（'C6-C7'），
-                                信号2（S2）的值为&nbsp;2&nbsp;代表“electrode_names”中的第&nbsp;3&nbsp;组电极点（'C7-C8'）。（因为数组下标是从&nbsp;0&nbsp;开始计算）</p>
+                                信号2（S2）的值为&nbsp;2&nbsp;代表“electrode_names”中的第&nbsp;3&nbsp;组电极点（'C7-C8'）。（因为数组下标是从&nbsp;0&nbsp;开始计算，注意：数值不能超界！）</p>
                             <p>当鼠标触动点时，会显示该点的具体值（h2值）。</p>
                             <p>若用户没有输入坐标位置（即没有进行第二步），则无法计算这两组信号的空间几何距离。表格的后三行将显示&nbsp;“<font color="red">坐标未定义！</font>”，其余内容不变，如下图所示：</p>
                             <img src="/static/data/line2.png" width="90%">
@@ -95,8 +97,29 @@
                                 <span style="display: inline-block; width: 60%;">小提琴图</span>
                             </h3>
                             <hr/>
-                            <p>该部分正在开发中……</p>
-                            <p><a href="{% url 'chart' %}">点我可查看更多图形！</a></p>
+                            <p>用户在此区域需要输入EZ、PZ、NIZ电极信号（可以不必输入完全），输入格式例如：&nbsp;<font color="red">EZ：0-3,5</font>&nbsp;表示“electrode_names”中的第&nbsp;0,1,2,3,5&nbsp;组电极点属于EZ区域。
+                            （其中&nbsp;'-'&nbsp;表示：区间“至”，数字之间用&nbsp;','&nbsp;隔开。重复输入电极并不会发生错误，如&nbsp;<font color="red">PZ：0-3,2</font>&nbsp;将解析为“electrode_names”中的第&nbsp;0,1,2,3&nbsp;组电极点属于PZ区域。）
+                                同折线图的信号输入范围一样，不能超出“electrode_names”的大小！
+                            </p>
+                            <img src="/static/data/zone_elect.png" width="90%">
+                            <p>上图为输入系统的电极点名称以及该病人所对应EZ、PZ、NIZ区域，根据此信息填写至“小提琴图”模块下的三个输入框中，点击“FC分析”按钮即可生成FC数据分析结果
+                                （用户可以点击“点击下载FC分析结果”链接将该结果保存至本地），并根据此分析结果得到FC小提琴总图，如下图所示：</p>
+                            <img src="/static/data/violin1.png">
+                            <p>用户可以用鼠标触碰小提琴区域，将显示该区域的中值、均值、最大值、最小值信息；也可触碰图中的散点，将显示该点所对应的&nbsp;h2&nbsp;值，点击该点还可以生成改点详细的小提琴图，如下图所示：</p>
+                            <img src="/static/data/violin2.png" width="90%">
+                            <p>用户可以点击其他的点以切换小提琴子图。（注意：该点的小提琴图的&nbsp;h2&nbsp;中值与该点在小提琴总图中的数值相等！）</p>
+                            <p>用户也可查看区域内与区域间的方向性小提琴图，点击“加权方向性”、“非加权方向性”分别查看其所对应的小提琴图，点击”取消“按钮可取消视图。如下所示：</p>
+                            <img src="/static/data/violin3.png">
+                        </div>
+                        <div id="other">
+                            <hr class="bold"/>
+                            <h3>
+                                <span style="display: inline-block; width: 60%;">其他</span>
+                            </h3>
+                            <hr/>
+                            <p>1.&nbsp;用户并不一定要严格按照此顺序（“空间坐标”、“折线图”、“小提琴图”）依次分析。</p>
+                            <p>2.&nbsp;<a href="{% url 'chart' %}">点我可查看更多图形！</a></p>
+                            <p>3.&nbsp;如果系统有bug，或您有其他问题、建议等，欢迎联系&nbsp;xiao xiong.</p>
                         </div>
                     </div>
                 </div>

@@ -212,7 +212,10 @@
                         </tbody>
                     </table>
                     <!-- Create a div where the graph will take place -->
-                    <div id="violinBwt"></div>
+                    <div id="violinBwt">
+                        <div id="violinLeft" style="width:1000px;float:left; text-align: center;margin-left: 10px;"></div>
+                        <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -223,6 +226,15 @@
     var one_elect = new Set();
     var one_elect_co = {};
     var init = false;
+
+    var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+    var div2 = d3.select("body").append("div")
+    .attr("class", "tooltip2")  //area
+    .style("opacity", 0);
+
     //阻止默认行为，stopPropagation(); -- 阻止元素冒泡事件
     $("#coordinate_file").click(function(e){
         /* js与Django交互的条件：
@@ -295,7 +307,6 @@
                 }
         });
     }
-    violinBwt();
     function showCoordinate(files,electrode_names) {
         //console.log(files);
         if (files[0]) {
