@@ -101,11 +101,11 @@
                 <form method="post" action="/" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% if not fc_info %}
-                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file"/>
-                        <input type="submit" value="提交"/><br>
+                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file" class="file_mat"/>
+                        <input type="submit" value="提交" class="submit_mat"/><br>
                     {% else %}
-                        更改数据文件：<input type="file" accept=".mat" name="up_file"/>
-                        <input type="submit" value="更改"/><br>
+                        更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat"/>
+                        <input type="submit" value="更改" class="submit_mat"/><br>
                     {% endif %}
                 </form>
                 <table align="center" class="table tab1 table-bordered" style="text-align: center;width: 80%">
@@ -184,6 +184,9 @@
                     <table>
                         <tbody>
                         <tr>
+                            <td style="margin-left: 10px">
+                                <label class="btn btn-primary" onclick="assignZone()">参考空间坐标</label>
+                            </td>
                             <td style="padding:15px 10px">
                                 <div class="input-group">
                                     <span class="input-group-addon">EZ: </span>
@@ -223,10 +226,16 @@
 </div>
 </body>
 <script>
-    var one_elect = new Set();
+    var one_elect = new Set(); //电极点名字
     var one_elect_co = {};
     var init = false;
-
+    var msg={{ msg|safe }};
+    if(msg){
+        alert(msg);
+    }
+    var ez_p=[];
+    var pz_p=[];
+    var niz_p=[];
     var div = d3.select("body").append("div")
     .attr("class", "tooltip")
     .style("opacity", 0);
@@ -235,6 +244,13 @@
     .attr("class", "tooltip2")  //area
     .style("opacity", 0);
 
+    $(".submit_mat").click(function(e){
+        //alert($(".file_mat").val());
+        if (!$(".file_mat").val()){
+            alert("您还未选择.mat数据文件!");
+            e.preventDefault();
+        }
+    });
     //阻止默认行为，stopPropagation(); -- 阻止元素冒泡事件
     $("#coordinate_file").click(function(e){
         /* js与Django交互的条件：
@@ -299,7 +315,7 @@
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var zones = result["zones"];
-                    alert(zones);
+                    //alert(zones);
                     fc_result.style.display = "inline";
                     violinBwt();
                 }else {
@@ -376,7 +392,69 @@
                 if (typeof(s1)==="number"&&typeof(s2)==="number"){
                 }
                 */
+                ez_p.length = 0;
+                pz_p.length = 0;
+                niz_p.length = 0;
+                //console.log(co_data)
+                for(var ii=0;ii<electrode_names.length;ii++){
+                    var one_e = electrode_names[ii].split("-")[0];
+                    //console.log(one_e)
+                    var flag = true;
+                    for (var jj=0;jj<co_data["ez"].length;jj++){
+                        if (co_data["ez"][jj][3].includes(one_e)){
+                            ez_p.push(ii);
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag){
+                        for (var jj=0;jj<co_data["pz"].length;jj++){
+                            if (co_data["pz"][jj][3].includes(one_e)){
+                                pz_p.push(ii);
+                                flag = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (flag){
+                        for (var jj=0;jj<co_data["niz"].length;jj++){
+                            if (co_data["niz"][jj][3].includes(one_e)){
+                                niz_p.push(ii);
+                                //flag = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                //console.log(ez_p,pz_p,niz_p)
             };
+        }
+    }
+    function assignZone() {
+        if (ez_p.length+pz_p.length+niz_p.length === 0){
+            alert("您未上传空间坐标文件,\n无法默认取值！");
+        }else{
+            var ez_s="";
+            var pz_s="";
+            var niz_s="";
+            for (i of ez_p){
+                ez_s += ", "+i;
+            }
+            for (i of pz_p){
+                pz_s += ", "+i;
+            }
+            for (i of niz_p){
+                niz_s += ", "+i;
+            }
+            if (ez_s.length){
+                $("#EZ").val(ez_s.slice(1))
+            }
+            if (pz_s.length){
+                $("#PZ").val(pz_s.slice(1))
+            }
+            if (niz_s.length){
+                $("#NIZ").val(niz_s.slice(1))
+            }
         }
     }
     function isInSet(item,set) {

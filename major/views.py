@@ -14,27 +14,34 @@ electrode_names = []
 
 def index(request):
     if request.method == "POST":
-        global matData
-        file_obj = request.FILES.get("up_file")
-        f1 = open(file_obj.name, "wb")
-        for i in file_obj.chunks():
-            f1.write(i)
-        f1.close()
-        matData = sio.loadmat(file_obj.name)
-        hour = matData['hour'][0][0]
-        minute = matData['minute'][0][0]
-        second = matData['second'][0][0]
-        os.remove(file_obj.name)
-        # date_time = str(hour) + ':' + str(minute) + ':' + str(second)
-        date_time = str(datetime.time(hour, minute, second))
-        file_name = file_obj.name
-        filters = list(matData['filters'][0])
-        filters = match_wave(filters)
-        windowSize = matData['aw_windowSize'][0][0]
-        step = matData['aw_step'][0][0]
-        maxLag = matData['aw_maxLag'][0][0]
-        start = matData['aw_start'][0][0]
-        section_iterations = matData['section_iterations'][0][0]
+        try:
+            file_obj = request.FILES.get("up_file")
+            f1 = open(file_obj.name, "wb")
+            for i in file_obj.chunks():
+                f1.write(i)
+            f1.close()
+            global matData
+            matData = sio.loadmat(file_obj.name)
+            hour = matData['hour'][0][0]
+            minute = matData['minute'][0][0]
+            second = matData['second'][0][0]
+            os.remove(file_obj.name)
+            file_name = file_obj.name
+            filters = list(matData['filters'][0])
+            filters = match_wave(filters)
+            windowSize = matData['aw_windowSize'][0][0]
+            step = matData['aw_step'][0][0]
+            maxLag = matData['aw_maxLag'][0][0]
+            start = matData['aw_start'][0][0]
+            section_iterations = matData['section_iterations'][0][0]
+        except Exception as e:
+            return render(request, "index.html", {"file_name": json.dumps(False),
+                                                  "msg":json.dumps(".mat文件读取失败！\n请检查数据是否正确。")})
+        try:
+            # date_time = str(hour) + ':' + str(minute) + ':' + str(second)
+            date_time = str(datetime.time(hour, minute, second))
+        except Exception as e:
+            date_time = str(hour) + ':' + str(minute) + ':' + str(second)
         global electrode_names
         electrode_names.clear()
         for i in matData['electrode_names'][0]:
@@ -43,8 +50,8 @@ def index(request):
                    "step": step, "maxLag": maxLag, "start": start, "section_iterations": section_iterations}
 
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
-        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name)})
-    return render(request, "index.html",{"file_name":json.dumps(False)})
+        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name),"msg":json.dumps(False)})
+    return render(request, "index.html",{"file_name":json.dumps(False),"msg":json.dumps(False)})
 
 
 def getH2(request):
@@ -241,6 +248,8 @@ def match_wave(filters):
         filters = "Ripple: " + str(filters)
     elif sum(filters) == 750:
         filters = "Fast Ripple: " + str(filters)
+    else:
+        filters = str(filters)
     return filters
 
 

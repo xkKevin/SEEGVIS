@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../static/js/bootstrap.min.js"></script>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+        .a-upload{
+                padding: 4px 10px;
+                /*height: 34px;*/
+                line-height: 28px;
+                position: relative;
+                cursor: pointer;
+                color: #fff;
+                background-color: #286090;
+                border-color: #204d74;
+                border-radius: 4px;
+                overflow: hidden;
+                display: inline-block;
+                *display: inline;
+                *zoom: 1;
+            }
+            .a-upload input{
+                position: absolute;
+                font-size: 100px;
+                right: 0;
+                top: 0;
+                opacity: 0;
+                filter: alpha(opacity=0);
+                cursor: pointer
+            }
+            .a-upload:hover{
+                color: #FFFFFF;
+                background: #337ab7;
+                border-color: #204d74;
+                text-decoration: none;
+            }
+    </style>
+</head>
+<body>
+<a href="javascript:;" id="upload" class="a-upload mr10"><input type="file" name="" id="">点击这里上传文件</a>
+
+<div class="showFileName"></div>
+
+<button id="uploadBtn" type="button" class="btn btn-primary">上传</button>
+</body>
+<script>
+    　　//显示隐藏的文件名并上传状态切换
+    　　$('.showFileName').hide();
+    　　$('#uploadBtn').style.display = "none";
+    　　$("#upload").on("change", "input[type='file']", function() {
+        　　var filePath = $(this).val();
+        　　//如果仅上传图片 if(filePath.indexOf("jpg") != -1 || filePath.indexOf("png") != -1) {
+        　　if(filePath) {
+        　　　　$(".fileerrorTip").html("").hide();
+        　　　　var arr = filePath.split('\\');
+        　　　　var fileName = arr[arr.length - 1];
+        　　　　$('.showFileName').show();
+        　　　　$('#uploadBtn').show();
+        　　　　$(".showFileName").html("已选择文件名：" + fileName);
+        　　　　$('#upload').hide();
+        　　} else {
+        　　　　$(".showFileName").html("");
+        　　　　$(".fileerrorTip").html("您未上传文件，或者您上传文件类型有误！").show();
+        　　　　return false
+        　　}
+        });
+</script>
+</html>
