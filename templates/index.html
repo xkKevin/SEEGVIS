@@ -431,30 +431,34 @@
         }
     }
     function assignZone() {
-        if (ez_p.length+pz_p.length+niz_p.length === 0){
+        if (one_elect.size === 0){
             alert("您未上传空间坐标文件,\n无法默认取值！");
-        }else{
-            var ez_s="";
-            var pz_s="";
-            var niz_s="";
-            for (i of ez_p){
-                ez_s += ", "+i;
-            }
-            for (i of pz_p){
-                pz_s += ", "+i;
-            }
-            for (i of niz_p){
-                niz_s += ", "+i;
-            }
-            if (ez_s.length){
-                $("#EZ").val(ez_s.slice(1))
-            }
-            if (pz_s.length){
-                $("#PZ").val(pz_s.slice(1))
-            }
-            if (niz_s.length){
-                $("#NIZ").val(niz_s.slice(1))
-            }
+            return;
+        }
+        if (ez_p.length+pz_p.length+niz_p.length === 0){
+            alert("您上传的空间坐标文件与基本信息中的电极不符,\n无法默认取值！");
+            return;
+        }
+        var ez_s="";
+        var pz_s="";
+        var niz_s="";
+        for (i of ez_p){
+            ez_s += ", "+i;
+        }
+        for (i of pz_p){
+            pz_s += ", "+i;
+        }
+        for (i of niz_p){
+            niz_s += ", "+i;
+        }
+        if (ez_s.length){
+            $("#EZ").val(ez_s.slice(1))
+        }
+        if (pz_s.length){
+            $("#PZ").val(pz_s.slice(1))
+        }
+        if (niz_s.length){
+            $("#NIZ").val(niz_s.slice(1))
         }
     }
     function isInSet(item,set) {

@@ -303,6 +303,7 @@ function violinBwt() {
         height = 300 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
+    d3.select("#violinRight").selectAll("*").remove();
     var violin = d3.select("#violinLeft");
     violin.selectAll("*").remove(); //清空所有子元素
     violin.append("h3")
