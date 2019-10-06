@@ -70,12 +70,8 @@ def getH2(request):
             s1 = int(request.POST.get('s1'))
             s2 = int(request.POST.get('s2'))
             s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2)
-        except ValueError as e:
-            return JsonResponse({'result': False, 'msg': "请输入整数！"})
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
-        # print(s1_s2[0])
-        # print(s1_s2[3])
         return JsonResponse({'result': True, 's1_s2': s1_s2})
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 

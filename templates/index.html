@@ -108,7 +108,7 @@
                         <input type="submit" value="更改" class="submit_mat"/><br>
                     {% endif %}
                 </form>
-                <table align="center" class="table tab1 table-bordered" style="text-align: center;width: 80%">
+                <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 90%">
                     {% if fc_info %}
                     <caption style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 10px;">
                         当前上传的数据文件为：<font color="red">{{ file_name }}</font>
@@ -272,10 +272,16 @@
             alert("请先上传.mat数据文件!");
             return;
         }
-        var s1 = $("#s1").val();
-        var s2 = $("#s2").val();
-        if (!(s1&&s2)){
-            alert("请输入两电极信号！");
+        var s1 = parseInt($("#s1").val());
+        var s2 = parseInt($("#s2").val());
+        if (isNaN(s1)||isNaN(s2)||s1<0||s2<0){
+            //alert(s1+"\n"+s2);
+            alert("请正确输入两电极信号（格式需为非负整数）！");
+            return;
+        }
+        var elen = fc_info["electrode_names"].length;
+        if(s1>=elen || s2>=elen){
+            alert("输入信号应小于"+elen+" !");
             return;
         }
         $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
@@ -349,7 +355,8 @@
                 }
                 var co_data={"ez":[],"pz":[],"niz":[]};
                 var relArr = this.result.split("\r\n");
-                var regp = new RegExp(".*,\".*,.*\"$");
+                //var regp = new RegExp(".*,\".*,.*\"$");
+                var regp = /[^\w\s,.-]/;
                 if (!$.isEmptyObject(relArr) && relArr.length > 1) {
                     for (var cokey in one_elect_co){
                         //delete one_elect_co.cokey; 清空字典，只能使用下面的方法
@@ -359,14 +366,14 @@
                     for (var key = 1, len = relArr.length; key < len; key++) {
                         var values = relArr[key];
                         if (regp.test(values)) {
-                            alert("文件内容中有英文逗号，麻烦修改后再上传，含有英文逗号的内容是：" + values);
+                            alert("文件内容中含有非法符号，请修改后再上传！含有非法符号的内容为：" + values);
                             return;
                         }
                         if (!$.isEmptyObject(values)) {
                             var obj = [];
                             var objArr = values.split(",");
                             for (var j=1;j<objArr.length;j++){
-                                obj.push(objArr[j]);
+                                obj.push(objArr[j].replace(/\s/ig,'')); //过滤空白字符
                             }
                             if (objArr[0] === "ez"){
                                 co_data.ez.push(obj);
