@@ -50,7 +50,9 @@ def index(request):
                    "step": step, "maxLag": maxLag, "start": start, "section_iterations": section_iterations}
 
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
-        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name),"msg":json.dumps(False)})
+        links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
+        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name),
+                                              "links": links, "msg":json.dumps(False)})
     return render(request, "index.html",{"file_name":json.dumps(False),"msg":json.dumps(False)})
 
 
@@ -222,6 +224,37 @@ def all_h2_max_direction(h2, lag):
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
             h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2))
+
+
+def out_in(h2, lag):
+    '''
+    s1,s2代表数字，如 0,3
+    返回每一个节点的out与in及tot links值
+    '''
+    enum = h2.shape[0]  # 电极点的数量
+    pnum = h2.shape[2]  # 时间点的数量
+    out_links = [[0] * enum for i in range(pnum)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * pnum 错误写法
+    in_links = [[0] * enum for i in range(pnum)]
+    for ei1 in range(enum - 1):
+        for ei2 in range(ei1 + 1, enum):
+            for pi in range(pnum):
+                if h2[ei1, ei2, pi] >= h2[ei2, ei1, pi]:
+                    if lag[ei1, ei2, pi] > 0:
+                        in_links[pi][ei1] += 1
+                        out_links[pi][ei2] += 1
+                    elif lag[ei1, ei2, pi] < 0:
+                        in_links[pi][ei2] += 1
+                        out_links[pi][ei1] += 1
+                else:
+                    if lag[ei2, ei1, pi] > 0:
+                        in_links[pi][ei2] += 1
+                        out_links[pi][ei1] += 1
+                    elif lag[ei2, ei1, pi] < 0:
+                        in_links[pi][ei1] += 1
+                        out_links[pi][ei2] += 1
+
+    return out_links, in_links
+    # JsonResponse({'out': out_links, 'in': out_links})
 
 
 def match_wave(filters):

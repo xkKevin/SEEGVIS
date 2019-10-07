@@ -25,4 +25,5 @@ urlpatterns = [
     url(r'^chart/$',views.chart, name="chart"),
     url(r'^guide/$',views.guide, name="guide"),
     url(r'^ViolinBox/$',views.ViolinBox, name="ViolinBox"),
+    # url(r'^out_in/$',views.out_in, name="out_in"),
 ]

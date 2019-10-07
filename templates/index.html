@@ -9,6 +9,7 @@
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <script src="/static/js/echarts.min.js"></script>
     <script src="/static/js/echarts-gl.min.js"></script>
+
     <script src="/static/js/visChart.js"></script>
 
     <script src="/static/js/d3.v4.js"></script>
@@ -220,6 +221,29 @@
                         <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-danger">
+        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseFive">
+            <h4 class="panel-title">
+                <label>OUT,OUT/IN,OUT-IN分析</label>
+            </h4>
+        </div>
+        <div id="collapseFive" class="panel-collapse collapse">
+            {% if links %}
+                OUT LINKS:<br>
+                {{ links.0 }} <br>
+                IN LINKS:<br>
+                {{ links.1 }}
+            {% endif %}
+            <div class="panel-body">
+                <div style="text-align: center">
+                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info.electrode_names }})">OUT</button>
+                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
+                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
+                </div>
+                <div id="out_in" style="height: 500px"></div>
             </div>
         </div>
     </div>
@@ -497,6 +521,88 @@
             return null;
         }
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
+    }
+
+    function out_in_analyse(e,type,electrode_names) {
+        // var channel_select = $("#channel_select").val();
+
+        $(e).siblings().removeClass().addClass("btn btn-default");
+        $(e).removeClass().addClass("btn btn-success");
+        var links = {'out':{{ links.0 }},'in':{{ links.1 }}};
+        var start = {{ fc_info.start }};
+        console.log(electrode_names);
+        var data=[];
+        var len = links.out.length;
+        let min = 0;
+        for(let i = 0; i < len; i++){  // i 是时间
+            for (let j = 0; j < links.out[0].length; j++){  // j 是 电极
+                if(type === 'OUT'){
+                    data.push([start + i, links.out[i][j], electrode_names[j]])
+                }
+                else if(type === 'OUT/IN'){
+                    data.push([start + i, parseFloat(((links.out[i][j] + 1) / (links.in[i][j] + 1)).toFixed(4)), electrode_names[j]])
+                }
+                else if(type === 'OUT-IN'){
+                    let value = links.out[i][j] - links.in[i][j];
+                    if (min > value) {
+                        min = value;
+                    }
+                    data.push([start + i, value, electrode_names[j]])
+                }
+            }
+        }
+        console.log(min);
+        if(type === 'OUT-IN'){
+            for (let i =0; i < data.length; i++){
+                data[i][1] -= min;
+            }
+        }
+        console.log(data);
+        /*
+        var data = [['18',10,'DQ'],['19',15,'DQ'],['20',35,'DQ'],
+            ['21',38,'DQ'],['22',22,'DQ'],['23',16,'DQ'],
+            ['24',7,'DQ'],['25',2,'DQ'],['26',17,'DQ'],
+            ['27',33,'DQ'],['28',40,'DQ'],['29',32,'DQ'],
+            ['30',26,'DQ'],['31',35,'DQ'],['32',40,'DQ'],
+            ['33',32,'DQ'],['34',26,'DQ'],['35',22,'DQ'],
+            ['36',16,'DQ'],['37',22,'DQ'],['38',10,'DQ'],
+            ['18',35,'TY'],['19',36,'TY'],['20',37,'TY'],
+            ['21',22,'TY'],['22',24,'TY'],['23',26,'TY'],
+            ['24',34,'TY'],['25',21,'TY'],['26',18,'TY'],
+            ['27',45,'TY'],['28',32,'TY'],['29',35,'TY'],
+            ['30',30,'TY'],['31',28,'TY'],['32',27,'TY'],
+            ['33',26,'TY'],['34',15,'TY'],['35',30,'TY'],
+            ['36',35,'TY'],['37',42,'TY'],['38',42,'TY'],
+            ['18',21,'SS'],['19',25,'SS'],['20',27,'SS'],
+            ['21',23,'SS'],['22',24,'SS'],['23',21,'SS'],
+            ['24',35,'SS'],['25',39,'SS'],['26',40,'SS'],
+            ['27',36,'SS'],['28',33,'SS'],['29',43,'SS'],
+            ['30',40,'SS'],['31',34,'SS'],['32',28,'SS'],
+            ['33',26,'SS'],['34',37,'SS'],['35',41,'SS'],
+            ['36',46,'SS'],['37',47,'SS'],['38',41,'SS'],
+            ['18',10,'QG'],['19',15,'QG'],['20',35,'QG'],
+            ['21',38,'QG'],['22',22,'QG'],['23',16,'QG'],
+            ['24',7,'QG'],['25',2,'QG'],['26',17,'QG'],
+            ['27',33,'QG'],['28',40,'QG'],['29',32,'QG'],
+            ['30',26,'QG'],['31',35,'QG'],['32',40,'QG'],
+            ['33',32,'QG'],['34',26,'QG'],['35',22,'QG'],
+            ['36',16,'QG'],['37',22,'QG'],['38',10,'QG'],
+            ['18',10,'SY'],['19',15,'SY'],['20',35,'SY'],
+            ['21',38,'SY'],['22',22,'SY'],['23',16,'SY'],
+            ['24',7,'SY'],['25',2,'SY'],['26',17,'SY'],
+            ['27',33,'SY'],['28',40,'SY'],['29',32,'SY'],
+            ['30',26,'SY'],['31',35,'SY'],['32',4,'SY'],
+            ['33',32,'SY'],['34',26,'SY'],['35',22,'SY'],
+            ['36',16,'SY'],['37',22,'SY'],['38',10,'SY'],
+            ['18',10,'DD'],['19',15,'DD'],['20',35,'DD'],
+            ['21',38,'DD'],['22',22,'DD'],['23',16,'DD'],
+            ['24',7,'DD'],['25',2,'DD'],['26',17,'DD'],
+            ['27',33,'DD'],['28',4,'DD'],['29',32,'DD'],
+            ['30',26,'DD'],['31',35,'DD'],['32',40,'DD'],
+            ['33',32,'DD'],['34',26,'DD'],['35',22,'DD'],
+            ['36',16,'DD'],['37',22,'DD'],['38',10,'DD']];
+        */
+        stream_out_in(data,type,electrode_names,[start, start + len - 1])
     }
 </script>
 <script>

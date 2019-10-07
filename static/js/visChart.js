@@ -492,7 +492,6 @@ function violinBwt() {
         });
 }
 
-
 function directionality(data,type) {
     /*
        outData=data;
@@ -791,4 +790,93 @@ function subviolinFC(data,zone,electrodes) {
                 .duration(500)
                 .style("opacity", 0);
             });
+}
+
+function stream_out_in(data,type,electrode_names,time) {
+    /*
+    console.log(links)
+    var margin = {top: 10, right: 100, bottom: 30, left: 50},
+        width = 700 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var out_in = d3.select("#out_in");
+    out_in.select("svg").remove();
+    var svg = out_in
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+    var x = d3.scaleLinear()
+        .domain([start, start+links[0].length])
+        .range([0, width]);
+    svg.append("g")
+        .attr("class","axis_line")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+    */
+    var dom = document.getElementById("out_in");
+    var myChart = echarts.init(dom);
+    var option = {
+        title: {
+            text: type,
+            top: 'bottom',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'line',
+                lineStyle: {
+                    color: 'rgba(0,0,0,0.2)',
+                    width: 1,
+                    type: 'solid'
+                }
+            }
+        },
+        legend: {
+            data: electrode_names
+        },
+        singleAxis: {
+            top: 50,
+            bottom: 50,
+            axisTick: {},
+            axisLabel: {},
+            type: 'value',
+            min: time[0],
+            max: time[1],
+            name: 'time',
+            // interval:2,
+            axisPointer: {
+                animation: true,
+                label: {
+                    show: true
+                }
+            },
+            splitLine: {
+                show: true,
+                lineStyle: {
+                    type: 'dashed',
+                    opacity: 0.2
+                }
+            }
+        },
+        series: [
+            {
+                type: 'themeRiver',
+                itemStyle: {
+                    emphasis: {
+                        shadowBlur: 20,
+                        shadowColor: 'rgba(0, 0, 0, 0.8)'
+                    }
+                },
+                data: data
+            }
+        ]
+    };
+    if (option && typeof option === "object") {
+        myChart.setOption(option, true);
+    }
 }
