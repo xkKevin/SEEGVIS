@@ -243,7 +243,10 @@
                     <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
                     <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
                 </div>
-                <div id="out_in" style="height: 500px"></div>
+                <div>
+                    <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
+                    <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -525,39 +528,49 @@
 
     function out_in_analyse(e,type,electrode_names) {
         // var channel_select = $("#channel_select").val();
-
+        let step = {{ fc_info.step }};
         $(e).siblings().removeClass().addClass("btn btn-default");
         $(e).removeClass().addClass("btn btn-success");
-        var links = {'out':{{ links.0 }},'in':{{ links.1 }}};
-        var start = {{ fc_info.start }};
+        let links = {'out':{{ links.0 }},'in':{{ links.1 }}};
+        let start = {{ fc_info.start }};
         console.log(electrode_names);
-        var data=[];
-        var len = links.out.length;
+        let stream_data=[];
+        let heap_data=[];
+        let time = [];
+        let len_t = links.out.length;
+        let len_e = links.out[0].length;
         let min = 0;
-        for(let i = 0; i < len; i++){  // i 是时间
-            for (let j = 0; j < links.out[0].length; j++){  // j 是 电极
+        let max = 0;
+        let value = 0;
+        for(let i = 0; i < len_t; i++){  // i 是时间
+            let t = start + i * step;
+            time.push(t);
+            for (let j = 0; j < len_e; j++){  // j 是 电极
                 if(type === 'OUT'){
-                    data.push([start + i, links.out[i][j], electrode_names[j]])
+                    value = links.out[i][j];
                 }
                 else if(type === 'OUT/IN'){
-                    data.push([start + i, parseFloat(((links.out[i][j] + 1) / (links.in[i][j] + 1)).toFixed(4)), electrode_names[j]])
+                    value = parseFloat(((links.out[i][j] + 1) / (links.in[i][j] + 1)).toFixed(4));
                 }
                 else if(type === 'OUT-IN'){
-                    let value = links.out[i][j] - links.in[i][j];
-                    if (min > value) {
-                        min = value;
-                    }
-                    data.push([start + i, value, electrode_names[j]])
+                    value = links.out[i][j] - links.in[i][j];
+                }
+                stream_data.push([t, value, electrode_names[j]]);
+                heap_data.push([i, len_e - j - 1, value]);
+                if (value > max) {
+                    max = value;
+                } else if (value < min) {
+                    min = value;
                 }
             }
         }
-        console.log(min);
+        console.log(min, max);
         if(type === 'OUT-IN'){
-            for (let i =0; i < data.length; i++){
-                data[i][1] -= min;
+            for (let i =0; i < stream_data.length; i++){
+                stream_data[i][1] -= min;
             }
         }
-        console.log(data);
+        console.log(stream_data);
         /*
         var data = [['18',10,'DQ'],['19',15,'DQ'],['20',35,'DQ'],
             ['21',38,'DQ'],['22',22,'DQ'],['23',16,'DQ'],
@@ -602,10 +615,8 @@
             ['33',32,'DD'],['34',26,'DD'],['35',22,'DD'],
             ['36',16,'DD'],['37',22,'DD'],['38',10,'DD']];
         */
-        stream_out_in(data,type,electrode_names,[start, start + len - 1])
+        stream_out_in(stream_data,type,electrode_names,[start, start + len_t - 1]);
+        heat_out_in(heap_data,min,max,electrode_names.reverse(),time,type);
     }
-</script>
-<script>
-
 </script>
 </html>

@@ -817,7 +817,7 @@ function stream_out_in(data,type,electrode_names,time) {
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x));
     */
-    var dom = document.getElementById("out_in");
+    var dom = document.getElementById("out_in_river");
     var myChart = echarts.init(dom);
     var option = {
         title: {
@@ -875,6 +875,63 @@ function stream_out_in(data,type,electrode_names,time) {
                 data: data
             }
         ]
+    };
+    if (option && typeof option === "object") {
+        myChart.setOption(option, true);
+    }
+}
+
+function heat_out_in(data,min,max,electrode_names,time,type) {
+    var dom = document.getElementById("out_in_heat");
+    var myChart = echarts.init(dom);
+
+    var option = {
+        tooltip: {
+            position: 'top'
+        },
+        animation: false,
+        grid: {
+            height: '50%',
+            y: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: time,
+            splitArea: {
+                show: true
+            }
+        },
+        yAxis: {
+            type: 'category',
+            data: electrode_names,
+            splitArea: {
+                show: true
+            }
+        },
+        visualMap: {
+            min: min,
+            max: max,
+            calculable: true,
+            orient: 'vertical',
+            left: '92%',
+            bottom: '50%'
+        },
+        series: [{
+            name: type,
+            type: 'heatmap',
+            data: data,
+            label: {
+                normal: {
+                    show: false
+                }
+            },
+            itemStyle: {
+                emphasis: {
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            }
+        }]
     };
     if (option && typeof option === "object") {
         myChart.setOption(option, true);
