@@ -20,4 +20,5 @@
 2. box chart
 3. violin chart
 4. heat map
-5. 3-D scatter chart
+5. theme river / stream graph
+6. 3-D scatter chart

@@ -4,6 +4,7 @@ import os
 import scipy.io as sio
 import json
 import numpy as np
+import pandas as pd
 import datetime
 import csv
 # Create your views here.
@@ -11,6 +12,8 @@ import csv
 matData = None
 h2_lag_direction = []
 electrode_names = []
+step = None
+start = None
 
 def index(request):
     if request.method == "POST":
@@ -20,7 +23,7 @@ def index(request):
             for i in file_obj.chunks():
                 f1.write(i)
             f1.close()
-            global matData
+            global matData, step, start
             matData = sio.loadmat(file_obj.name)
             hour = matData['hour'][0][0]
             minute = matData['minute'][0][0]
@@ -109,7 +112,7 @@ def fcAnalyse(request):
         ez_niz = cal_fc_bwt(ez,niz,elec_len,"ez_niz")
         pz_niz = cal_fc_bwt(pz,niz,elec_len,"pz_niz")
         # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
-        fc_analyse = open("static/data/fc_analyse.csv","w",newline="")
+        fc_analyse = open("static/data/fc_result.csv","w",newline="")
         writer = csv.writer(fc_analyse)
         writer.writerow(fileHeader)
         for i in ez_in:
@@ -232,12 +235,12 @@ def out_in(h2, lag):
     返回每一个节点的out与in及tot links值
     '''
     enum = h2.shape[0]  # 电极点的数量
-    pnum = h2.shape[2]  # 时间点的数量
-    out_links = [[0] * enum for i in range(pnum)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * pnum 错误写法
-    in_links = [[0] * enum for i in range(pnum)]
+    tnum = h2.shape[2]  # 时间点的数量
+    out_links = [[0] * enum for i in range(tnum)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * pnum 错误写法
+    in_links = [[0] * enum for i in range(tnum)]
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            for pi in range(pnum):
+            for pi in range(tnum):
                 if h2[ei1, ei2, pi] >= h2[ei2, ei1, pi]:
                     if lag[ei1, ei2, pi] > 0:
                         in_links[pi][ei1] += 1
@@ -253,6 +256,10 @@ def out_in(h2, lag):
                         in_links[pi][ei1] += 1
                         out_links[pi][ei2] += 1
 
+    global electrode_names, start, step
+    data = pd.DataFrame(np.c_[out_links,in_links],index=[start + step * i for i in range(tnum)],
+                        columns=[np.r_[['OUT'] * enum, ['IN'] * enum],electrode_names * 2])
+    data.to_excel("static/data/out_result.xls")
     return out_links, in_links
     # JsonResponse({'out': out_links, 'in': out_links})
 

@@ -319,7 +319,7 @@ function violinBwt() {
               "translate(" + margin.left + "," + margin.top + ")");
     var outData=[];
     // Read the data and compute summary statistics for each specie
-    d3.csv("/static/data/fc_analyse.csv", function(data) {
+    d3.csv("/static/data/fc_result.csv", function(data) {
         //console.log(data);
         outData=data;
         //console.log(d3.median(data[0].h2.slice(1,-1).split(",")));

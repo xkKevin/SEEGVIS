@@ -85,10 +85,6 @@
 
 </head>
 <body>
-{#<div id="upper" style="width:100%;height: 50px;">#}
-{#    <img src="/static/data/seeg.png" width="100%" height="100%">#}
-{#</div>#}
-<!-- 折叠 -->
 <div class="panel-group" id="accordion">
     <div class="panel panel-default">
         <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
@@ -210,7 +206,7 @@
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
                             <td >
-                                <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_analyse.csv">点击下载FC分析结果</a>
+                                <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_result.csv">点击下载FC分析结果</a>
                             </td>
                         </tr>
                         </tbody>
@@ -236,12 +232,16 @@
                 {{ links.0 }} <br>
                 IN LINKS:<br>
                 {{ links.1 }}
+                <div>
+                    <a id="out_result" href="/static/data/out_result.xls">点击下载OUT分析结果</a>
+                </div>
             {% endif %}
             <div class="panel-body">
                 <div style="text-align: center">
                     <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info.electrode_names }})">OUT</button>
                     <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
                     <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
+                    <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info.electrode_names }})">IN</button>
                 </div>
                 <div>
                     <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
@@ -533,7 +533,7 @@
         $(e).removeClass().addClass("btn btn-success");
         let links = {'out':{{ links.0 }},'in':{{ links.1 }}};
         let start = {{ fc_info.start }};
-        console.log(electrode_names);
+        // console.log(electrode_names);
         let stream_data=[];
         let heap_data=[];
         let time = [];
@@ -548,6 +548,9 @@
             for (let j = 0; j < len_e; j++){  // j 是 电极
                 if(type === 'OUT'){
                     value = links.out[i][j];
+                }
+                else if(type === 'IN'){
+                    value = links.in[i][j];
                 }
                 else if(type === 'OUT/IN'){
                     value = parseFloat(((links.out[i][j] + 1) / (links.in[i][j] + 1)).toFixed(4));
@@ -564,13 +567,13 @@
                 }
             }
         }
-        console.log(min, max);
+        // console.log(min, max);
         if(type === 'OUT-IN'){
             for (let i =0; i < stream_data.length; i++){
                 stream_data[i][1] -= min;
             }
         }
-        console.log(stream_data);
+        // console.log(stream_data);
         /*
         var data = [['18',10,'DQ'],['19',15,'DQ'],['20',35,'DQ'],
             ['21',38,'DQ'],['22',22,'DQ'],['23',16,'DQ'],
