@@ -792,7 +792,7 @@ function subviolinFC(data,zone,electrodes) {
             });
 }
 
-function stream_out_in(data,type,electrode_names,time) {
+function stream_out_in(data,type,electrode_names,time,step) {
     /*
     console.log(links)
     var margin = {top: 10, right: 100, bottom: 30, left: 50},
@@ -826,6 +826,28 @@ function stream_out_in(data,type,electrode_names,time) {
             left: 'center'
         },
         tooltip: {
+            position: function (point, params, dom, rect, size) {
+                // point[0] 表示x轴，从左往右；point[1] 表示y轴，从上往下
+                //size: 包括 dom（即tooltip) 的尺寸和 echarts 容器的当前尺寸，例如：{contentSize: [width, height], viewSize: [width, height]}。
+                // 鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
+                // var obj = {top: 70};
+                //obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = size.viewSize[0]/2 - 150;
+                let obj = {};
+                if (point[0] + size.contentSize[0] < size.viewSize[0]){
+                    obj['left'] = point[0];
+                } else{
+                    obj['left'] = point[0] - size.contentSize[0];
+                }
+                if(point[1] + size.contentSize[1] / 2 < size.viewSize[1]){
+                    obj['top'] = point[1] - size.contentSize[1] / 2;
+                    if (obj['top'] < 0){
+                        obj['top'] = 0;
+                    }
+                } else{
+                    obj['top'] = size.viewSize[1] - size.contentSize[1];
+                }
+                return obj;
+            },
             trigger: 'axis',
             axisPointer: {
                 type: 'line',
@@ -848,7 +870,8 @@ function stream_out_in(data,type,electrode_names,time) {
             min: time[0],
             max: time[1],
             name: 'time',
-            // interval:2,
+            nameLocation: 'end',
+            interval:step,
             axisPointer: {
                 animation: true,
                 label: {

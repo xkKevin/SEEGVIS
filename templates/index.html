@@ -228,26 +228,28 @@
         </div>
         <div id="collapseFive" class="panel-collapse collapse">
             {% if links %}
-                OUT LINKS:<br>
-                {{ links.0 }} <br>
-                IN LINKS:<br>
-                {{ links.1 }}
-                <div>
+                <div style="margin-left: 12px">
+                    OUT LINKS:<br>
+                    {{ links.0 }} <br>
+                    IN LINKS:<br>
+                    {{ links.1 }}<br>
                     <a id="out_result" href="/static/data/out_result.xls">点击下载OUT分析结果</a>
                 </div>
+                <div class="panel-body">
+                    <div style="text-align: center">
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info.electrode_names }})">OUT</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info.electrode_names }})">IN</button>
+                    </div>
+                    <div>
+                        <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
+                        <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
+                    </div>
+                </div>
+            {% else %}
+                <h5 style="margin-left: 15px">您还未上传.mat数据文件!</h5>
             {% endif %}
-            <div class="panel-body">
-                <div style="text-align: center">
-                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info.electrode_names }})">OUT</button>
-                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
-                    <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
-                    <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info.electrode_names }})">IN</button>
-                </div>
-                <div>
-                    <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
-                    <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -528,12 +530,12 @@
 
     function out_in_analyse(e,type,electrode_names) {
         // var channel_select = $("#channel_select").val();
-        let step = {{ fc_info.step }};
+        let step = {{ fc_info.step|safe }};
         $(e).siblings().removeClass().addClass("btn btn-default");
         $(e).removeClass().addClass("btn btn-success");
-        let links = {'out':{{ links.0 }},'in':{{ links.1 }}};
-        let start = {{ fc_info.start }};
-        // console.log(electrode_names);
+        let links = {'out':{{ links.0|safe }},'in':{{ links.1|safe }}};
+        let start = {{ fc_info.start|safe }};
+        //console.log("ss",electrode_names);
         let stream_data=[];
         let heap_data=[];
         let time = [];
@@ -618,7 +620,7 @@
             ['33',32,'DD'],['34',26,'DD'],['35',22,'DD'],
             ['36',16,'DD'],['37',22,'DD'],['38',10,'DD']];
         */
-        stream_out_in(stream_data,type,electrode_names,[start, start + len_t - 1]);
+        stream_out_in(stream_data,type,electrode_names,[start, time[len_t - 1]],step);
         heat_out_in(heap_data,min,max,electrode_names.reverse(),time,type);
     }
 </script>

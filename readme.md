@@ -1,5 +1,7 @@
 ## SEEGVIS
 
+### Introduction
+
 #### It is a web system for visualizing and processing EEG/SEEG data.
 
 ##### Methodological Techniques:
@@ -22,3 +24,15 @@
 4. heat map
 5. theme river / stream graph
 6. 3-D scatter chart
+
+### Install
+
+Python 3.7.x
+
+| Package | Version |
+| ------- | ------- |
+| Django  | 1.11.8  |
+| numpy   |         |
+| scipy   |         |
+| pandas  | 0.24.2  |
+| xlwt    |         |

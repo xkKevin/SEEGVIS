@@ -217,7 +217,11 @@ def h2_max_direction(h2, lag, s1=0, s2=1):
     sp = sum(positive)
     sn = sum(negative)
     nw_direction = (h2_direct.count(1) - h2_direct.count(-1)) / pnum
-    return h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+    if sp + sn == 0:
+        w_direction = 0
+    else:
+        w_direction = (sp - sn) / (sp + sn)
+    return h2_max, lag_max, nw_direction, w_direction
 
 
 def all_h2_max_direction(h2, lag):
