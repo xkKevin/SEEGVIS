@@ -223,7 +223,7 @@
     <div class="panel panel-danger">
         <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseFive">
             <h4 class="panel-title">
-                <label>OUT,OUT/IN,OUT-IN分析</label>
+                <label>OUT&nbsp;分析</label>
             </h4>
         </div>
         <div id="collapseFive" class="panel-collapse collapse">
@@ -237,10 +237,10 @@
                 </div>
                 <div class="panel-body">
                     <div style="text-align: center">
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info.electrode_names }})">OUT</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info.electrode_names }})">OUT / IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info.electrode_names }})">OUT - IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info.electrode_names }})">IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT / IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT - IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">IN</button>
                     </div>
                     <div>
                         <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
@@ -528,19 +528,19 @@
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 
-    function out_in_analyse(e,type,electrode_names) {
+    function out_in_analyse(e, type, fc_info, out_links, in_links) {
         // var channel_select = $("#channel_select").val();
-        let step = {{ fc_info.step|safe }};
+        let step = fc_info.step;
         $(e).siblings().removeClass().addClass("btn btn-default");
         $(e).removeClass().addClass("btn btn-success");
-        let links = {'out':{{ links.0|safe }},'in':{{ links.1|safe }}};
-        let start = {{ fc_info.start|safe }};
-        //console.log("ss",electrode_names);
+        // console.log(out_in_links, links);
+        let start = fc_info.start;
+        let electrode_names = fc_info.electrode_names;
         let stream_data=[];
         let heap_data=[];
         let time = [];
-        let len_t = links.out.length;
-        let len_e = links.out[0].length;
+        let len_t = out_links.length;
+        let len_e = out_links[0].length;
         let min = 0;
         let max = 0;
         let value = 0;
@@ -549,16 +549,16 @@
             time.push(t);
             for (let j = 0; j < len_e; j++){  // j 是 电极
                 if(type === 'OUT'){
-                    value = links.out[i][j];
+                    value = out_links[i][j];
                 }
                 else if(type === 'IN'){
-                    value = links.in[i][j];
+                    value = in_links[i][j];
                 }
                 else if(type === 'OUT/IN'){
-                    value = parseFloat(((links.out[i][j] + 1) / (links.in[i][j] + 1)).toFixed(4));
+                    value = parseFloat(((out_links[i][j] + 1) / (in_links[i][j] + 1)).toFixed(4));
                 }
                 else if(type === 'OUT-IN'){
-                    value = links.out[i][j] - links.in[i][j];
+                    value = out_links[i][j] - in_links[i][j];
                 }
                 stream_data.push([t, value, electrode_names[j]]);
                 heap_data.push([i, len_e - j - 1, value]);
