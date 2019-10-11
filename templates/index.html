@@ -10,13 +10,26 @@
     <script src="/static/js/echarts.min.js"></script>
     <script src="/static/js/echarts-gl.min.js"></script>
 
+    <link href="/static/css/bootstrap-slider.css" rel="stylesheet">
+    <script type="text/javascript" src="/static/js/bootstrap-slider.js"></script>
+
     <script src="/static/js/visChart.js"></script>
 
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
     <style type="text/css">
-        input{
-            display:inline-block!important;
+        .slider.slider-horizontal {
+            max-width: 700px;
+            min-width: 200px;
+            width: 90%;
+            height: 20px;
+        }
+        .slider-selection {
+            background: red;
+        }
+
+        input.button{
+            display: inline-block;
         }
         .tab1 > tbody > tr:nth-child(2n-1) > td,
         .tab1 > tbody > tr:nth-child(2n-1) > th {
@@ -45,10 +58,10 @@
             font-family: sans-serif;
             font-size: 15px;
         }
-        div.tooltip {
+        div.tooltip1 {
             position: absolute;
             text-align: center;
-            width: 60px;
+            width: 90px;
             height: 22px;
             padding: 2px;
             font: 12px sans-serif;
@@ -98,19 +111,18 @@
                 <form method="post" action="/" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% if not fc_info %}
-                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file" class="file_mat"/>
-                        <input type="submit" value="提交" class="submit_mat"/><br>
+                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
+                        <input type="submit" value="提交" class="submit_mat button"/><br>
                     {% else %}
-                        更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat"/>
-                        <input type="submit" value="更改" class="submit_mat"/><br>
+                        更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
+                        <input type="submit" value="更改" class="submit_mat button"/><br>
                     {% endif %}
                 </form>
+                {% if fc_info %}
                 <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 90%">
-                    {% if fc_info %}
                     <caption style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 10px;">
                         当前上传的数据文件为：<font color="red">{{ file_name }}</font>
                     </caption>
-                    {% endif %}
                     <tbody>
                     {% for key,value in fc_info.items %}
                         <tr class="active">
@@ -120,6 +132,11 @@
                     {% endfor %}
                     </tbody>
                 </table>
+                <div style="margin-top:50px; text-align: center;">
+                    <b>请先筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
+                    &nbsp;&nbsp;<button class="btn btn-success" onclick="alert('hello')">确认</button>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -131,7 +148,8 @@
         </div>
         <div id="collapseTwo" class="panel-collapse collapse">
             <div class="panel-body" id="electrodes">
-                请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" onchange="showCoordinate(this.files,{{ fc_info.electrode_names }})"/>
+                请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" class="button"
+                                     onchange="showCoordinate(this.files)"/>
             </div>
         </div>
     </div>
@@ -237,10 +255,10 @@
                 </div>
                 <div class="panel-body">
                     <div style="text-align: center">
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT / IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">OUT - IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN',{{ fc_info }}, {{ links.0 }}, {{ links.1 }})">IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT')">OUT</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN')">OUT / IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN')">OUT - IN</button>
+                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN')">IN</button>
                     </div>
                     <div>
                         <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
@@ -255,23 +273,42 @@
 </div>
 </body>
 <script>
-    var one_elect = new Set(); //电极点名字
-    var one_elect_co = {};
-    var init = false;
-    var msg={{ msg|safe }};
+    var fc_info = {{ fc_info | default:"null"|safe }}; // 注意： 冒号后面不能有空格！ 引号中可以是对象，如 :"{xk:12}"
+    var out_links = {{ links.0|default:"null"|safe }};
+    var in_links = {{ links.1|default:"null"|safe }};
+    var init = {{ file_name|default:"null"|safe }};
+    var msg = {{ msg|default:"null"|safe }};
     if(msg){
         alert(msg);
     }
+    var one_elect = new Set(); //电极点名字
+    var one_elect_co = {};
     var ez_p=[];
     var pz_p=[];
     var niz_p=[];
+
     var div = d3.select("body").append("div")
-    .attr("class", "tooltip")
+    .attr("class", "tooltip1")
     .style("opacity", 0);
 
     var div2 = d3.select("body").append("div")
     .attr("class", "tooltip2")  //area
     .style("opacity", 0);
+
+    var slider = null;
+    if (init){
+        slider = new Slider('#time_slider', {
+            min: fc_info.start,
+            max: fc_info.end,
+            step: fc_info.step,
+            value: [fc_info.start, fc_info.end],
+            tooltip: 'always'
+        });
+        slider.on("slideStart", function(o){
+            console.log("OO",o);
+            //console.log("NN",n);
+        });
+    }
 
     $(".submit_mat").click(function(e){
         //alert($(".file_mat").val());
@@ -286,7 +323,6 @@
         1、views.py中返回的函数中的值要用 json.dumps()处理
         2、在网页上要加一个 safe 过滤器
          */
-        init = {{ file_name|safe }};
         if (!init){
             alert("请先上传.mat数据文件!");
             e.preventDefault();
@@ -296,7 +332,7 @@
         e.stopPropagation();
         $(window).attr('location', '{% url 'guide' %}');
     });
-    function getH2(fc_info) {
+    function getH2() {
         if(!fc_info){
             alert("请先上传.mat数据文件!");
             return;
@@ -319,10 +355,10 @@
                     var s1_s2 = result["s1_s2"];
                     var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]];
                     var lens = fc_info["section_iterations"];
-                    var times = d3.range(fc_info["start"],fc_info["start"]+lens);
+                    //var times = d3.range(fc_info["start"],fc_info["start"]+lens);
                     var data = [];
                     for(i=0;i<lens;i++){
-                        data.push({"time":times[i],"h2":s1_s2[0][i]})
+                        data.push({"time":fc_info.start + i * fc_info.step,"h2":s1_s2[0][i]})
                     }
                     linechart(data,signal,lens,s1_s2[2],s1_s2[3],twoElectCO(signal,one_elect_co));
                 }else {
@@ -331,7 +367,6 @@
         });
     }
     function fcAnalyse(){
-        init = {{ file_name|safe }};
         if (!init){
             alert("请先上传.mat数据文件!");
             return;
@@ -373,6 +408,7 @@
                 }
             };
             */
+            let electrode_names = fc_info['electrode_names'];
             reader.onload = function (f) {
                 //var result = document.getElementById("result");
                 //显示文件
@@ -528,7 +564,7 @@
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 
-    function out_in_analyse(e, type, fc_info, out_links, in_links) {
+    function out_in_analyse(e, type) {
         // var channel_select = $("#channel_select").val();
         let step = fc_info.step;
         $(e).siblings().removeClass().addClass("btn btn-default");
@@ -576,50 +612,6 @@
             }
         }
         // console.log(stream_data);
-        /*
-        var data = [['18',10,'DQ'],['19',15,'DQ'],['20',35,'DQ'],
-            ['21',38,'DQ'],['22',22,'DQ'],['23',16,'DQ'],
-            ['24',7,'DQ'],['25',2,'DQ'],['26',17,'DQ'],
-            ['27',33,'DQ'],['28',40,'DQ'],['29',32,'DQ'],
-            ['30',26,'DQ'],['31',35,'DQ'],['32',40,'DQ'],
-            ['33',32,'DQ'],['34',26,'DQ'],['35',22,'DQ'],
-            ['36',16,'DQ'],['37',22,'DQ'],['38',10,'DQ'],
-            ['18',35,'TY'],['19',36,'TY'],['20',37,'TY'],
-            ['21',22,'TY'],['22',24,'TY'],['23',26,'TY'],
-            ['24',34,'TY'],['25',21,'TY'],['26',18,'TY'],
-            ['27',45,'TY'],['28',32,'TY'],['29',35,'TY'],
-            ['30',30,'TY'],['31',28,'TY'],['32',27,'TY'],
-            ['33',26,'TY'],['34',15,'TY'],['35',30,'TY'],
-            ['36',35,'TY'],['37',42,'TY'],['38',42,'TY'],
-            ['18',21,'SS'],['19',25,'SS'],['20',27,'SS'],
-            ['21',23,'SS'],['22',24,'SS'],['23',21,'SS'],
-            ['24',35,'SS'],['25',39,'SS'],['26',40,'SS'],
-            ['27',36,'SS'],['28',33,'SS'],['29',43,'SS'],
-            ['30',40,'SS'],['31',34,'SS'],['32',28,'SS'],
-            ['33',26,'SS'],['34',37,'SS'],['35',41,'SS'],
-            ['36',46,'SS'],['37',47,'SS'],['38',41,'SS'],
-            ['18',10,'QG'],['19',15,'QG'],['20',35,'QG'],
-            ['21',38,'QG'],['22',22,'QG'],['23',16,'QG'],
-            ['24',7,'QG'],['25',2,'QG'],['26',17,'QG'],
-            ['27',33,'QG'],['28',40,'QG'],['29',32,'QG'],
-            ['30',26,'QG'],['31',35,'QG'],['32',40,'QG'],
-            ['33',32,'QG'],['34',26,'QG'],['35',22,'QG'],
-            ['36',16,'QG'],['37',22,'QG'],['38',10,'QG'],
-            ['18',10,'SY'],['19',15,'SY'],['20',35,'SY'],
-            ['21',38,'SY'],['22',22,'SY'],['23',16,'SY'],
-            ['24',7,'SY'],['25',2,'SY'],['26',17,'SY'],
-            ['27',33,'SY'],['28',40,'SY'],['29',32,'SY'],
-            ['30',26,'SY'],['31',35,'SY'],['32',4,'SY'],
-            ['33',32,'SY'],['34',26,'SY'],['35',22,'SY'],
-            ['36',16,'SY'],['37',22,'SY'],['38',10,'SY'],
-            ['18',10,'DD'],['19',15,'DD'],['20',35,'DD'],
-            ['21',38,'DD'],['22',22,'DD'],['23',16,'DD'],
-            ['24',7,'DD'],['25',2,'DD'],['26',17,'DD'],
-            ['27',33,'DD'],['28',4,'DD'],['29',32,'DD'],
-            ['30',26,'DD'],['31',35,'DD'],['32',40,'DD'],
-            ['33',32,'DD'],['34',26,'DD'],['35',22,'DD'],
-            ['36',16,'DD'],['37',22,'DD'],['38',10,'DD']];
-        */
         stream_out_in(stream_data,type,electrode_names,[start, time[len_t - 1]],step);
         heat_out_in(heap_data,min,max,electrode_names.reverse(),time,type);
     }

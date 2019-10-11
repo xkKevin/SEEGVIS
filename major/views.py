@@ -37,9 +37,9 @@ def index(request):
             maxLag = matData['aw_maxLag'][0][0]
             start = matData['aw_start'][0][0]
             section_iterations = matData['section_iterations'][0][0]
+            end = start + (section_iterations - 1) * step
         except Exception as e:
-            return render(request, "index.html", {"file_name": json.dumps(False),
-                                                  "msg":json.dumps(".mat文件读取失败！\n请检查数据是否正确。")})
+            return render(request, "index.html", {"msg": json.dumps(".mat文件读取失败！\n请检查数据是否正确。")})
         try:
             # date_time = str(hour) + ':' + str(minute) + ':' + str(second)
             date_time = str(datetime.time(hour, minute, second))
@@ -50,13 +50,12 @@ def index(request):
         for i in matData['electrode_names'][0]:
             electrode_names.append(i[0])
         fc_info = {"electrode_names": electrode_names,"filters": filters,"time": date_time, "windowSize": windowSize,
-                   "step": step, "maxLag": maxLag, "start": start, "section_iterations": section_iterations}
+                   "step": step, "maxLag": maxLag, "start": start, "end":end, "section_iterations": section_iterations}
 
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
         links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
-        return render(request, "index.html", {"fc_info": fc_info,"file_name":json.dumps(file_name),
-                                              "links": links, "msg":json.dumps(False)})
-    return render(request, "index.html",{"file_name":json.dumps(False),"msg":json.dumps(False)})
+        return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name), "links": links})
+    return render(request, "index.html")
 
 
 def getH2(request):

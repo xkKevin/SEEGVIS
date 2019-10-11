@@ -189,6 +189,10 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
     // .domain([0,10])
         .domain([data[0].time, data[lens - 1].time])
         .range([0, width]);
+    var ticks = x.ticks(5),
+        tickFormat = x.tickFormat(5, "+%");
+    ticks.map(tickFormat); // ["-100%", "-50%", "+0%", "+50%", "+100%"]
+
     svg.append("g")
         .attr("class","axis_line")
         .attr("transform", "translate(0," + height + ")")
@@ -238,8 +242,8 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
             div.transition()
                 .duration(200)
                 .style("opacity", .9);
-            div.html(d.h2.toFixed(4))
-                .style("left", (d3.event.pageX) + "px")
+            div.html(d.time+' : '+d.h2.toFixed(4))
+                .style("left", (d3.event.pageX - 45) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", function (d) {
