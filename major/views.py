@@ -53,27 +53,22 @@ def index(request):
                    "step": step, "maxLag": maxLag, "start": start, "end":end, "section_iterations": section_iterations}
 
         all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
-        links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
-        return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name), "links": links})
+        # links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
+        return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name)})
     return render(request, "index.html")
 
 
 def getH2(request):
-    global matData
-    '''
-    if request.method == "POST":
-        index = request.POST.get('index')
-        print(type(matData["aw_h2"]))
-        print(matData["aw_h2"].shape)
-        dd = matData["aw_h2"][:,:,int(index)]
-        return JsonResponse({'result': True, 'h2': [[0,2],[2,3]]})
-    return JsonResponse({'result': False,'msg':"Failed"})
-    '''
+    global matData, start, step
     if request.method == "POST":
         try:
             s1 = int(request.POST.get('s1'))
             s2 = int(request.POST.get('s2'))
-            s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2)
+            select_start = float(request.POST.get('select_start'))
+            select_end = float(request.POST.get('select_end'))
+            select_s = int((select_start - start)/step)  # 筛选的起始时间下标
+            select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
+            s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2, select_s, select_l)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
@@ -131,6 +126,22 @@ def fcAnalyse(request):
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 
 
+def outAnalyse(request):
+    global matData, start, step
+    if request.method == "POST":
+        try:
+            select_start = float(request.POST.get('select_start'))
+            select_end = float(request.POST.get('select_end'))
+            h2_threshold = float(request.POST.get('h2_threshold'))
+            select_s = int((select_start - start)/step)  # 筛选的起始时间下标
+            select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
+            links = out_in(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)  # [out_links, in_links]
+        except Exception as e:
+            return JsonResponse({'result': False, 'msg': "时间筛选有误！"})
+        return JsonResponse({'result': True, 'out_links': links[0], "in_links": links[1]})
+    return JsonResponse({'result': False, 'msg': "Not POST Request!"})
+
+
 def cal_fc_in(signals,n,zone):
     '''
     计算区域内FC
@@ -176,46 +187,48 @@ def position(s1,s2,n):
     return p+s2-s1-1
 
 
-def h2_max_direction(h2, lag, s1=0, s2=1):
+def h2_max_direction(h2, lag, s1, s2, select_s, select_l):
     '''
     s1,s2代表数字，如 0,3
+    select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
     返回这组信号中s1与s2的最终h2（最大值）及其对应的时间延迟
     以及两信号的不加权方向及加权方向
     '''
-    pnum = h2.shape[2]  # 时间点的数量
-    h2_max = [None] * pnum
-    lag_max = [None] * pnum
-    h2_direct = [0] * pnum
+    # pnum = h2.shape[2]  # 时间点的数量
+    h2_max = [None] * select_l
+    lag_max = [None] * select_l
+    h2_direct = [0] * select_l
 
     positive = []
     negative = []
 
-    for pi in range(pnum):
+    for pi in range(select_s, select_s + select_l):
+        select_i = pi - select_s
         if h2[s1, s2, pi] >= h2[s2, s1, pi]:
-            h2_max[pi] = h2[s1, s2, pi]
-            lag_max[pi] = lag[s1, s2, pi]
+            h2_max[select_i] = h2[s1, s2, pi]
+            lag_max[select_i] = lag[s1, s2, pi]
 
-            if lag_max[pi] > 0:
-                h2_direct[pi] = -1
-                negative.append(h2_max[pi])
-            elif lag_max[pi] < 0:
-                h2_direct[pi] = 1
-                positive.append(h2_max[pi])
+            if lag_max[select_i] > 0:
+                h2_direct[select_i] = -1
+                negative.append(h2_max[select_i])
+            elif lag_max[select_i] < 0:
+                h2_direct[select_i] = 1
+                positive.append(h2_max[select_i])
 
         else:
-            h2_max[pi] = h2[s2, s1, pi]
-            lag_max[pi] = lag[s2, s1, pi]
+            h2_max[select_i] = h2[s2, s1, pi]
+            lag_max[select_i] = lag[s2, s1, pi]
 
-            if lag_max[pi] > 0:
-                h2_direct[pi] = 1
-                positive.append(h2_max[pi])
-            elif lag_max[pi] < 0:
-                h2_direct[pi] = -1
-                negative.append(h2_max[pi])
+            if lag_max[select_i] > 0:
+                h2_direct[select_i] = 1
+                positive.append(h2_max[select_i])
+            elif lag_max[select_i] < 0:
+                h2_direct[select_i] = -1
+                negative.append(h2_max[select_i])
 
     sp = sum(positive)
     sn = sum(negative)
-    nw_direction = (h2_direct.count(1) - h2_direct.count(-1)) / pnum
+    nw_direction = (h2_direct.count(1) - h2_direct.count(-1)) / select_l
     if sp + sn == 0:
         w_direction = 0
     else:
@@ -229,38 +242,41 @@ def all_h2_max_direction(h2, lag):
     h2_lag_direction.clear()
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2))
+            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, 0, h2.shape[2])) # h2.shape[2] 时间点的数量
 
 
-def out_in(h2, lag):
+def out_in(h2, lag, select_s, select_l, h2_threshold):
     '''
-    s1,s2代表数字，如 0,3
-    返回每一个节点的out与in及tot links值
+    select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
+    返回每一个节点在筛选的时间内的out与in links值
     '''
     enum = h2.shape[0]  # 电极点的数量
-    tnum = h2.shape[2]  # 时间点的数量
-    out_links = [[0] * enum for i in range(tnum)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * pnum 错误写法
-    in_links = [[0] * enum for i in range(tnum)]
+    # tnum = h2.shape[2] 时间点的数量
+    out_links = [[0] * enum for i in range(select_l)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * select_l 错误写法
+    in_links = [[0] * enum for i in range(select_l)]
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            for pi in range(tnum):
+            for pi in range(select_s, select_s + select_l):
+                select_i = pi - select_s
                 if h2[ei1, ei2, pi] >= h2[ei2, ei1, pi]:
-                    if lag[ei1, ei2, pi] > 0:
-                        in_links[pi][ei1] += 1
-                        out_links[pi][ei2] += 1
-                    elif lag[ei1, ei2, pi] < 0:
-                        in_links[pi][ei2] += 1
-                        out_links[pi][ei1] += 1
+                    if h2[ei1, ei2, pi] >= h2_threshold:
+                        if lag[ei1, ei2, pi] > 0:
+                            in_links[select_i][ei1] += 1
+                            out_links[select_i][ei2] += 1
+                        elif lag[ei1, ei2, pi] < 0:
+                            in_links[select_i][ei2] += 1
+                            out_links[select_i][ei1] += 1
                 else:
-                    if lag[ei2, ei1, pi] > 0:
-                        in_links[pi][ei2] += 1
-                        out_links[pi][ei1] += 1
-                    elif lag[ei2, ei1, pi] < 0:
-                        in_links[pi][ei1] += 1
-                        out_links[pi][ei2] += 1
+                    if h2[ei2, ei1, pi] >= h2_threshold:
+                        if lag[ei2, ei1, pi] > 0:
+                            in_links[select_i][ei2] += 1
+                            out_links[select_i][ei1] += 1
+                        elif lag[ei2, ei1, pi] < 0:
+                            in_links[select_i][ei1] += 1
+                            out_links[select_i][ei2] += 1
 
     global electrode_names, start, step
-    data = pd.DataFrame(np.c_[out_links,in_links],index=[start + step * i for i in range(tnum)],
+    data = pd.DataFrame(np.c_[out_links,in_links], index=[start + step * i for i in range(select_s, select_s + select_l)],
                         columns=[np.r_[['OUT'] * enum, ['IN'] * enum],electrode_names * 2])
     data.to_excel("static/data/out_result.xls")
     return out_links, in_links

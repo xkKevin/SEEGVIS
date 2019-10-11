@@ -18,7 +18,7 @@
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
     <style type="text/css">
-        .slider.slider-horizontal {
+        #collapseOne .slider.slider-horizontal {
             max-width: 700px;
             min-width: 200px;
             width: 90%;
@@ -133,8 +133,9 @@
                     </tbody>
                 </table>
                 <div style="margin-top:50px; text-align: center;">
-                    <b>请先筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
-                    &nbsp;&nbsp;<button class="btn btn-success" onclick="alert('hello')">确认</button>
+                    &nbsp;&nbsp;<b>请先筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
+                    &nbsp;&nbsp;<button class="btn btn-success" onclick="select_time()">确认</button>&nbsp;
+                    <span id="select_confirm" style="color: deeppink; font-size: larger; visibility: hidden;">设置成功</span>
                 </div>
                 {% endif %}
             </div>
@@ -177,7 +178,7 @@
                             </div>
                         </td>
                         <td>
-                            <label class="btn btn-success" onclick="getH2({{ fc_info }})">提交</label>
+                            <label class="btn btn-success" onclick="getH2()">提交</label>
                         </td>
                     </tr>
                     </tbody>
@@ -245,37 +246,39 @@
             </h4>
         </div>
         <div id="collapseFive" class="panel-collapse collapse">
-            {% if links %}
-                <div style="margin-left: 12px">
-                    OUT LINKS:<br>
-                    {{ links.0 }} <br>
-                    IN LINKS:<br>
-                    {{ links.1 }}<br>
-                    <a id="out_result" href="/static/data/out_result.xls">点击下载OUT分析结果</a>
+            <div id="out_result" style="margin-left: 12px; display: none;">
+                OUT LINKS:<br>
+                <span id="out_links"></span><br>
+                IN LINKS:<br>
+                <span id="in_links"></span><br>
+                <a href="/static/data/out_result.xls">点击下载OUT分析结果</a>
+            </div>
+            <div class="panel-body">
+                <table align="center">
+                    <td style="width: 168px;">
+                        <b style="font-size: larger;">当前h2阈值为：<span id="h2_threshold_value" style="color: red">0</span></b>
+                    </td>
+                    <td style="padding-right: 20px;">
+                        <input id="h2_threshold" class="form-control" type="text"/>
+                    </td>
+                    <td>
+                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT')">OUT</button>
+                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT/IN')">OUT / IN</button>
+                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT-IN')">OUT - IN</button>
+                        <button class="btn btn-default" onclick="outAnalyse(this,'IN')">IN</button>
+                    </td>
+                </table>
+                <div id="out_chart" style="display: none; margin-top: 15px;">
+                    <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
+                    <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
                 </div>
-                <div class="panel-body">
-                    <div style="text-align: center">
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT')">OUT</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT/IN')">OUT / IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'OUT-IN')">OUT - IN</button>
-                        <button class="btn btn-default" onclick="out_in_analyse(this,'IN')">IN</button>
-                    </div>
-                    <div>
-                        <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
-                        <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
-                    </div>
-                </div>
-            {% else %}
-                <h5 style="margin-left: 15px">您还未上传.mat数据文件!</h5>
-            {% endif %}
+            </div>
         </div>
     </div>
 </div>
 </body>
 <script>
     var fc_info = {{ fc_info | default:"null"|safe }}; // 注意： 冒号后面不能有空格！ 引号中可以是对象，如 :"{xk:12}"
-    var out_links = {{ links.0|default:"null"|safe }};
-    var in_links = {{ links.1|default:"null"|safe }};
     var init = {{ file_name|default:"null"|safe }};
     var msg = {{ msg|default:"null"|safe }};
     if(msg){
@@ -295,19 +298,31 @@
     .attr("class", "tooltip2")  //area
     .style("opacity", 0);
 
-    var slider = null;
+    var h2_threshold_slider = new Slider("#h2_threshold", {
+        min: 0,
+        max: 1,
+        step: 0.001,
+        value: 0
+    });
+    h2_threshold_slider.on("change", function (val) {  // 不能用slide，因为slide 是指拖动，不是改变
+        $("#h2_threshold_value").text(val.newValue);
+    });
+
+    var time_slider = null;
     if (init){
-        slider = new Slider('#time_slider', {
+        time_slider = new Slider('#time_slider', {
             min: fc_info.start,
             max: fc_info.end,
             step: fc_info.step,
             value: [fc_info.start, fc_info.end],
             tooltip: 'always'
         });
+        /*
         slider.on("slideStart", function(o){
             console.log("OO",o);
             //console.log("NN",n);
         });
+        */
     }
 
     $(".submit_mat").click(function(e){
@@ -332,6 +347,23 @@
         e.stopPropagation();
         $(window).attr('location', '{% url 'guide' %}');
     });
+
+    var select_start = {{ fc_info.start | default:"null"|safe }};
+    var select_end = {{ fc_info.end | default:"null"|safe }};
+    function select_time() {
+        select_start = time_slider.getValue()[0];
+        select_end = time_slider.getValue()[1];
+        /*
+        $("#select_confirm").fadeIn();
+        $("#select_confirm").fadeOut();
+        */
+
+        $("#select_confirm").css("visibility","visible");
+        window.setTimeout(function() {
+            $("#select_confirm").css("visibility","hidden");
+        },1500)
+
+    }
     function getH2() {
         if(!fc_info){
             alert("请先上传.mat数据文件!");
@@ -349,20 +381,20 @@
             alert("输入信号应小于"+elen+" !");
             return;
         }
-        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2},function(result, statue){
+        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var s1_s2 = result["s1_s2"];
                     var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]];
-                    var lens = fc_info["section_iterations"];
+                    var lens = parseInt((select_end - select_start)/fc_info.step + 1);
                     //var times = d3.range(fc_info["start"],fc_info["start"]+lens);
                     var data = [];
                     for(i=0;i<lens;i++){
-                        data.push({"time":fc_info.start + i * fc_info.step,"h2":s1_s2[0][i]})
+                        data.push({"time":select_start + i * fc_info.step,"h2":s1_s2[0][i]})
                     }
                     linechart(data,signal,lens,s1_s2[2],s1_s2[3],twoElectCO(signal,one_elect_co));
                 }else {
-                    alert("Failed!\n message:"+result["msg"])
+                    alert("Failed!\n message:"+result["msg"]);
                 }
         });
     }
@@ -564,56 +596,70 @@
         return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
     }
 
-    function out_in_analyse(e, type) {
-        // var channel_select = $("#channel_select").val();
-        let step = fc_info.step;
-        $(e).siblings().removeClass().addClass("btn btn-default");
-        $(e).removeClass().addClass("btn btn-success");
-        // console.log(out_in_links, links);
-        let start = fc_info.start;
-        let electrode_names = fc_info.electrode_names;
-        let stream_data=[];
-        let heap_data=[];
-        let time = [];
-        let len_t = out_links.length;
-        let len_e = out_links[0].length;
-        let min = 0;
-        let max = 0;
-        let value = 0;
-        for(let i = 0; i < len_t; i++){  // i 是时间
-            let t = start + i * step;
-            time.push(t);
-            for (let j = 0; j < len_e; j++){  // j 是 电极
-                if(type === 'OUT'){
-                    value = out_links[i][j];
-                }
-                else if(type === 'IN'){
-                    value = in_links[i][j];
-                }
-                else if(type === 'OUT/IN'){
-                    value = parseFloat(((out_links[i][j] + 1) / (in_links[i][j] + 1)).toFixed(4));
-                }
-                else if(type === 'OUT-IN'){
-                    value = out_links[i][j] - in_links[i][j];
-                }
-                stream_data.push([t, value, electrode_names[j]]);
-                heap_data.push([i, len_e - j - 1, value]);
-                if (value > max) {
-                    max = value;
-                } else if (value < min) {
-                    min = value;
-                }
-            }
+    function outAnalyse(e, type) {
+        if(!fc_info){
+            alert("请先上传.mat数据文件!");
+            return;
         }
-        // console.log(min, max);
-        if(type === 'OUT-IN'){
-            for (let i =0; i < stream_data.length; i++){
-                stream_data[i][1] -= min;
+        $.post('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold_slider.getValue()},function(result, statue){
+            if(result["result"] === true) {
+                let out_links = result["out_links"];
+                let in_links = result["in_links"];
+                $("#out_result").css("display","block");
+                $("#out_links").text(out_links.map(function (d) { return " ["+d+"] "}));
+                $("#in_links").text(in_links.map(function (d) { return " ["+d+"] "}));
+                let step = fc_info.step;
+                $(e).siblings().removeClass().addClass("btn btn-default");
+                $(e).removeClass().addClass("btn btn-success");
+                // console.log(out_in_links, links);
+                let electrode_names = fc_info.electrode_names;
+                let stream_data = [];
+                let heap_data = [];
+                let time = [];
+                let len_t = out_links.length;
+                let len_e = out_links[0].length;
+                let min = 0;
+                let max = 0;
+                let value = 0;
+                for (let i = 0; i < len_t; i++) {  // i 是时间
+                    let t = select_start + i * step;
+                    time.push(t);
+                    for (let j = 0; j < len_e; j++) {  // j 是 电极
+                        if (type === 'OUT') {
+                            value = out_links[i][j];
+                        }
+                        else if (type === 'IN') {
+                            value = in_links[i][j];
+                        }
+                        else if (type === 'OUT/IN') {
+                            value = parseFloat(((out_links[i][j] + 1) / (in_links[i][j] + 1)).toFixed(4));
+                        }
+                        else if (type === 'OUT-IN') {
+                            value = out_links[i][j] - in_links[i][j];
+                        }
+                        stream_data.push([t, value, electrode_names[j]]);
+                        heap_data.push([i, len_e - j - 1, value]);
+                        if (value > max) {
+                            max = value;
+                        } else if (value < min) {
+                            min = value;
+                        }
+                    }
+                }
+                // console.log(min, max);
+                if (type === 'OUT-IN') {
+                    for (let i = 0; i < stream_data.length; i++) {
+                        stream_data[i][1] -= min;
+                    }
+                }
+                // console.log(stream_data);
+                $("#out_chart").css("display","block");
+                stream_out_in(stream_data, type, electrode_names, [select_start, time[len_t - 1]], step);
+                heat_out_in(heap_data, min, max, electrode_names.concat().reverse(), time, type);
+            } else{
+                alert("Failed!\n message:"+result["msg"]);
             }
-        }
-        // console.log(stream_data);
-        stream_out_in(stream_data,type,electrode_names,[start, time[len_t - 1]],step);
-        heat_out_in(heap_data,min,max,electrode_names.reverse(),time,type);
+        });
     }
 </script>
 </html>
