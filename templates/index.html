@@ -157,7 +157,7 @@
                     <div>
                         <label>
                             <span class="btn btn-primary"> 
-                                读取标记文件<input type="file" style="display: none;" multiple onchange="readFromCsv(this,readToArray)">
+                                读取标记文件<input type="file" accept=".txt,.csv" style="display: none;" multiple onchange="readFromCsv(this,readToArray)">
                             </span>
                         </label>
                         <button class="btn btn-primary" onclick="saveMarks()">保存时间标记</button>
@@ -483,9 +483,17 @@
     $("#time_marks").delegate("button.apply", "click", function () {
         let mark_start = parseFloat($(this).parent().siblings()[1].innerText);
         let mark_end = parseFloat($(this).parent().siblings()[2].innerText);
+        if (mark_start == "NaN" || mark_end == "NaN"){
+            alert("请将起始时间和终止时间设为数字！");
+            return;
+        }
+        if (mark_start > mark_end) {
+            alert("起始时间需小于终止时间！");
+            return;
+        }
         mark_start = ((mark_start-fc_info.start)/fc_info.step).toFixed()*fc_info.step + fc_info.start;
         mark_end = ((mark_end-fc_info.start)/fc_info.step).toFixed()*fc_info.step + fc_info.start;
-        console.log(mark_start,mark_end);
+        // console.log(mark_start,mark_end);
         time_slider.setValue([mark_start, mark_end]);
     });
     $("#time_marks").delegate("button.delete", "click", function () {
@@ -565,10 +573,7 @@
         exportToCsv('time_marks.csv', marks_list);
     }
     function readToArray(data) {
-        data = data[0];
-        console.log(data);
         for (let i=1; i<data.length;i++){
-            console.log(data[i]);
             addMarks(data[i][0],data[i][1],data[i][2],data[i][3]);
         }
     }
@@ -589,7 +594,7 @@
             alert("输入信号应小于"+elen+" !");
             return;
         }
-        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
+        $.get('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var s1_s2 = result["s1_s2"];
@@ -809,7 +814,7 @@
             alert("请先上传.mat数据文件!");
             return;
         }
-        $.post('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},function(result, statue){
+        $.get('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},function(result, statue){
             if(result["result"] === true) {
                 let out_links = result["out_links"];
                 let in_links = result["in_links"];
@@ -911,14 +916,14 @@
         }
     }
     function readFromCsv(file_e, callback) {
-        var data = [];
         // var file = document.getElementById(file_name).files[0];
         var file = file_e.files[0];
         var reader = new FileReader();
         reader.readAsText(file,'UTF-8');
         //读取完文件之后，执行下面这个回调函数：
         reader.onload = function (evt) {
-            data.push(csv2array(reader.result.toString()));
+            let data = csv2array(reader.result.toString());
+            // console.log(data);
             callback && callback(data);
         }
     }

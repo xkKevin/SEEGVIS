@@ -62,20 +62,20 @@ def index(request):
 
 def getH2(request):
     global matData, start, step
-    if request.method == "POST":
+    if request.method == "GET":
         try:
-            s1 = int(request.POST.get('s1'))
-            s2 = int(request.POST.get('s2'))
-            h2_threshold = float(request.POST.get('h2_threshold'))
-            select_start = float(request.POST.get('select_start'))
-            select_end = float(request.POST.get('select_end'))
+            s1 = int(request.GET.get('s1'))
+            s2 = int(request.GET.get('s2'))
+            h2_threshold = float(request.GET.get('h2_threshold'))
+            select_start = float(request.GET.get('select_start'))
+            select_end = float(request.GET.get('select_end'))
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
             s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2, select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
-    return JsonResponse({'result': False, 'msg': "Not POST Request!"})
+    return JsonResponse({'result': False, 'msg': "Not GET Request!"})
 
 
 def fcAnalyse(request):
@@ -141,18 +141,18 @@ def fcAnalyse(request):
 
 def outAnalyse(request):
     global matData, start, step
-    if request.method == "POST":
+    if request.method == "GET":
         try:
-            select_start = float(request.POST.get('select_start'))
-            select_end = float(request.POST.get('select_end'))
-            h2_threshold = float(request.POST.get('h2_threshold'))
+            select_start = float(request.GET.get('select_start'))
+            select_end = float(request.GET.get('select_end'))
+            h2_threshold = float(request.GET.get('h2_threshold'))
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
             links = out_in(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)  # [out_links, in_links]
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "时间筛选有误！"})
         return JsonResponse({'result': True, 'out_links': links[0], "in_links": links[1]})
-    return JsonResponse({'result': False, 'msg': "Not POST Request!"})
+    return JsonResponse({'result': False, 'msg': "Not GET Request!"})
 
 
 def cal_fc_in(signals,n,zone):
