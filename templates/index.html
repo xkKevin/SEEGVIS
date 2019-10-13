@@ -18,10 +18,20 @@
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
     <style type="text/css">
+        table.table-bordered th {
+            text-align: center;
+        }
+        #time_marks tr td{
+            vertical-align: middle;
+        }
+        #time_marks tr td button{
+            margin-left: 10px;
+            margin-right: 10px;
+        }
         #collapseOne .slider.slider-horizontal {
-            max-width: 700px;
+            max-width: 800px;
             min-width: 200px;
-            width: 90%;
+            width: 41%;
             height: 20px;
         }
         .slider-selection {
@@ -132,10 +142,88 @@
                     {% endfor %}
                     </tbody>
                 </table>
-                <div style="margin-top:50px; text-align: center;">
-                    &nbsp;&nbsp;<b>请先筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
-                    &nbsp;&nbsp;<button class="btn btn-success" onclick="select_time()">确认</button>&nbsp;
-                    <span id="select_confirm" style="color: deeppink; font-size: larger; visibility: hidden;">设置成功</span>
+                <div style="margin-top:40px; text-align: center;">
+                &nbsp;&nbsp;<b>筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
+                    <div style="display:inline-block; width:200px; margin-left: 10px; vertical-align: bottom;">
+                        <div class="input-group">
+                            <span class="input-group-addon">h2阈值</span>
+                            <input id="h2_threshold" type="text" class="form-control" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                        </div>
+                    </div>
+                &nbsp;&nbsp;<button class="btn btn-success" onclick="select_time()">确认</button>&nbsp;
+                    <div id="select_confirm" style="display:inline-block;font-size: larger; width: 105px; text-align: left;"></div>
+                </div>
+                <div style="margin-top: 20px; text-align: center">
+                    <div>
+                        <label>
+                            <span class="btn btn-primary"> 
+                                读取标记文件<input type="file" style="display: none;" multiple onchange="readFromCsv(this,readToArray)">
+                            </span>
+                        </label>
+                        <button class="btn btn-primary" onclick="saveMarks()">保存时间标记</button>
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#myModal"
+                                onclick=$("#operate_type").text("新增")>新增时间标记</button>
+                        <button class="btn btn-primary" onclick=$("#time_marks").empty()>清空所有标记</button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <table class="table table-bordered" align="center" style="width: 72%">
+                            <thead>
+                                <tr>
+                                    <th width="145px;">标记名</th>
+                                    <th width="135px;">起始时间</th>
+                                    <th width="135px;">终止时间</th>
+                                    <th style="min-width: 160px;">描述</th>
+                                    <th width="250px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="time_marks">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true" onclick="cancel()">
+                                        &times;
+                                    </button>
+                                    <h4 class="modal-title" id="myModalLabel">
+                                        <span id="operate_type"></span>时间标记
+                                    </h4>
+                                </div>
+                                <div class="modal-body">
+                                    <div style="display: inline-block; width: 34%;">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">标记名</span>
+                                            <input id="add_name" type="text" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div style="display: inline-block; width: 32%;">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">起始时间</span>
+                                            <input id="add_start" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                                        </div>
+                                    </div>
+                                    <div style="display: inline-block; width: 32%;">
+                                        <div class="input-group">
+                                            <span class="input-group-addon">终止时间</span>
+                                            <input id="add_end" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-addon">描述</span>
+                                        <input id="add_desc" type="text" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal" onclick="cancel()">取消</button>
+                                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="operateMarks()">
+                                        确定
+                                    </button>
+                                </div>
+                            </div><!-- /.modal-content -->
+                        </div><!-- /.modal -->
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -259,7 +347,7 @@
                         <b style="font-size: larger;">当前h2阈值为：<span id="h2_threshold_value" style="color: red">0</span></b>
                     </td>
                     <td style="padding-right: 20px;">
-                        <input id="h2_threshold" class="form-control" type="text"/>
+                        <input id="h2_threshold2" class="form-control" type="text"/>
                     </td>
                     <td>
                         <button class="btn btn-default" onclick="outAnalyse(this,'OUT')">OUT</button>
@@ -298,7 +386,8 @@
     .attr("class", "tooltip2")  //area
     .style("opacity", 0);
 
-    var h2_threshold_slider = new Slider("#h2_threshold", {
+    var h2_threshold = 0;
+    var h2_threshold_slider = new Slider("#h2_threshold2", {
         min: 0,
         max: 1,
         step: 0.001,
@@ -306,6 +395,8 @@
     });
     h2_threshold_slider.on("change", function (val) {  // 不能用slide，因为slide 是指拖动，不是改变
         $("#h2_threshold_value").text(val.newValue);
+        $("#h2_threshold").val(val.newValue);
+        h2_threshold = val.newValue;
     });
 
     var time_slider = null;
@@ -315,7 +406,7 @@
             max: fc_info.end,
             step: fc_info.step,
             value: [fc_info.start, fc_info.end],
-            tooltip: 'always'
+            // tooltip: 'always'
         });
         /*
         slider.on("slideStart", function(o){
@@ -351,18 +442,135 @@
     var select_start = {{ fc_info.start | default:"null"|safe }};
     var select_end = {{ fc_info.end | default:"null"|safe }};
     function select_time() {
-        select_start = time_slider.getValue()[0];
-        select_end = time_slider.getValue()[1];
+        let threshold = $("#h2_threshold").val();
+        var reg = /^0(\.[0-9]*)?$/;   // 匹配 [0,1) 的小数，包括 "0."
+        if (!reg.test(threshold)){
+            $("#select_confirm").css("color","deeppink").text("阈值输入有误");
+        } else{
+            h2_threshold = parseFloat(threshold);
+            select_start = time_slider.getValue()[0];
+            select_end = time_slider.getValue()[1];
+            $("#h2_threshold").val(h2_threshold);
+            $("#select_confirm").css("color","green").text("设置成功");
+            h2_threshold_slider.setValue(h2_threshold);
+            $("#h2_threshold_value").text(h2_threshold);
+        }
+        $("#select_confirm").css("visibility","visible");
+        window.setTimeout(function() {
+            $("#select_confirm").css("visibility","hidden");
+        },2000)
         /*
         $("#select_confirm").fadeIn();
         $("#select_confirm").fadeOut();
         */
+    }
+    var mark_select = null;
+    var marks_list = [['Name','Start','End','Description']];
+    $("#time_marks").delegate("button.modify", "click", function () {
+        let marks = [];
+        // console.log($(this).parent().siblings());
+        marks.push($(this).parent().siblings()[0].innerText);
+        marks.push($(this).parent().siblings()[1].innerText);
+        marks.push($(this).parent().siblings()[2].innerText);
+        marks.push($(this).parent().siblings()[3].innerText);
+        $("#operate_type").text("修改");
+        $("#add_name").val(marks[0]);
+        $("#add_start").val(marks[1]);
+        $("#add_end").val(marks[2]);
+        $("#add_desc").val(marks[3]);
+        mark_select = $(this).parent();
+    });
+    $("#time_marks").delegate("button.apply", "click", function () {
+        let mark_start = parseFloat($(this).parent().siblings()[1].innerText);
+        let mark_end = parseFloat($(this).parent().siblings()[2].innerText);
+        mark_start = ((mark_start-fc_info.start)/fc_info.step).toFixed()*fc_info.step + fc_info.start;
+        mark_end = ((mark_end-fc_info.start)/fc_info.step).toFixed()*fc_info.step + fc_info.start;
+        console.log(mark_start,mark_end);
+        time_slider.setValue([mark_start, mark_end]);
+    });
+    $("#time_marks").delegate("button.delete", "click", function () {
+        $(this).parent().parent().remove();
+    });
+    function operateMarks() {
+        if ($("#operate_type").text() == "新增"){
+            addMarks($("#add_name").val(),$("#add_start").val(),$("#add_end").val(),$("#add_desc").val());
+        } else{
+            modifyMarks();
+        }
+        cancel();
+    }
+    function cancel() {
+        $("#add_name").val("");
+        $("#add_start").val("");
+        $("#add_end").val("");
+        $("#add_desc").val("");
+    }
+    function addMarks(name,start,end,desc){
+        let tr = document.createElement("tr");
+        let td_name = document.createElement("td");
+        td_name.innerText = name;
+        let td_start = document.createElement("td");
+        td_start.innerText = start;
+        let td_end = document.createElement("td");
+        td_end.innerText = end;
+        let td_desc = document.createElement("td");
+        td_desc.innerText = desc;
+        let td_apply = document.createElement("td");
+        let apply_button = document.createElement("button");
+        apply_button.innerText = "应用";
+        apply_button.setAttribute("class","btn btn-warning apply");
+        let modify_button = document.createElement("button");
+        modify_button.innerText = "修改";
+        modify_button.setAttribute("class","btn btn-warning modify");
+        modify_button.setAttribute("data-toggle","modal");
+        modify_button.setAttribute("data-target","#myModal");
 
-        $("#select_confirm").css("visibility","visible");
-        window.setTimeout(function() {
-            $("#select_confirm").css("visibility","hidden");
-        },1500)
+        let delete_button = document.createElement("button");
+        delete_button.innerText = "删除";
+        delete_button.setAttribute("class","btn btn-warning delete");
 
+        td_apply.appendChild(modify_button);
+        td_apply.appendChild(delete_button);
+        td_apply.appendChild(apply_button);
+        tr.appendChild(td_name);
+        tr.appendChild(td_start);
+        tr.appendChild(td_end);
+        tr.appendChild(td_desc);
+        tr.appendChild(td_apply);
+        $("#time_marks").append(tr);
+        // $("#modify_button").on("onclick", modifyMarks(td_name.innerText,td_start.innerText,td_end.innerText,td_desc.innerText));
+    }
+    function modifyMarks() {
+        mark_select.siblings()[0].innerText = $("#add_name").val();
+        mark_select.siblings()[1].innerText = $("#add_start").val();
+        mark_select.siblings()[2].innerText = $("#add_end").val();
+        mark_select.siblings()[3].innerText = $("#add_desc").val();
+    }
+    function saveMarks() {
+        //alert("此功能暂未实现！") [0].childNodes[1].innerText
+        let all_marks = $("#time_marks").children();
+        if (all_marks.length == 0){
+            alert("当前没有任何标记！");
+            return;
+        }
+        /*
+        marks_list = all_marks.map(function (mark) {
+            return [mark.childNodes[0].innerText,mark.childNodes[1].innerText,mark.childNodes[2].innerText,mark.childNodes[3].innerText];
+        });
+        */
+        for (let i=0;i<all_marks.length; i++){
+            marks_list.push([all_marks[i].childNodes[0].innerText,all_marks[i].childNodes[1].innerText,all_marks[i].childNodes[2].innerText,all_marks[i].childNodes[3].innerText])
+        }
+        // console.log(marks_list);
+        exportToCsv('time_marks.csv', marks_list);
+    }
+    function readToArray(data) {
+        data = data[0];
+        console.log(data);
+        for (let i=1; i<data.length;i++){
+            console.log(data[i]);
+            addMarks(data[i][0],data[i][1],data[i][2],data[i][3]);
+        }
     }
     function getH2() {
         if(!fc_info){
@@ -381,7 +589,7 @@
             alert("输入信号应小于"+elen+" !");
             return;
         }
-        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end},function(result, statue){
+        $.post('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var s1_s2 = result["s1_s2"];
@@ -413,7 +621,7 @@
         var fc_result = document.getElementById("fc_result");
         fc_result.style.display = "none";
         // alert(ez+"\n"+pz+"\n"+niz)
-        $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz},function(result, statue){
+        $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
                 if(result["result"] === true){
                     //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                     var zones = result["zones"];
@@ -425,7 +633,7 @@
                 }
         });
     }
-    function showCoordinate(files,electrode_names) {
+    function showCoordinate(files) {
         //console.log(files);
         if (files[0]) {
             var reader = new FileReader();
@@ -601,7 +809,7 @@
             alert("请先上传.mat数据文件!");
             return;
         }
-        $.post('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold_slider.getValue()},function(result, statue){
+        $.post('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},function(result, statue){
             if(result["result"] === true) {
                 let out_links = result["out_links"];
                 let in_links = result["in_links"];
@@ -660,6 +868,153 @@
                 alert("Failed!\n message:"+result["msg"]);
             }
         });
+    }
+
+    function exportToCsv(filename, rows) {
+        var processRow = function (row) {
+            var finalVal = '';
+            for (var j = 0; j < row.length; j++) {
+                var innerValue = row[j] === null ? '' : row[j].toString();
+                if (row[j] instanceof Date) {
+                    innerValue = row[j].toLocaleString();
+                }
+                var result = innerValue.replace(/"/g, '""');
+                if (result.search(/("|,|\n)/g) >= 0)
+                    result = '"' + result + '"';
+                if (j > 0)
+                    finalVal += ',';
+                finalVal += result;
+            }
+            return finalVal + '\n';
+        };
+
+        var csvFile = '';
+        for (var i = 0; i < rows.length; i++) {
+            csvFile += processRow(rows[i]);
+        }
+
+        var blob = new Blob([csvFile], { type: 'text/csv;charset=UTF-8;' });
+        if (navigator.msSaveBlob) { // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            var link = document.createElement("a");
+            if (link.download !== undefined) { // feature detection
+                // Browsers that support HTML5 download attribute
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    }
+    function readFromCsv(file_e, callback) {
+        var data = [];
+        // var file = document.getElementById(file_name).files[0];
+        var file = file_e.files[0];
+        var reader = new FileReader();
+        reader.readAsText(file,'UTF-8');
+        //读取完文件之后，执行下面这个回调函数：
+        reader.onload = function (evt) {
+            data.push(csv2array(reader.result.toString()));
+            callback && callback(data);
+        }
+    }
+    function csv2array(data, delimeter) {
+        // Retrieve the delimeter
+        if (delimeter == undefined)
+            delimeter = ',';
+        if (delimeter && delimeter.length > 1)
+            delimeter = ',';
+
+        // initialize variables
+        var newline = '\n';
+        var eof = '';
+        var i = 0;
+        var c = data.charAt(i);
+        var row = 0;
+        var col = 0;
+        var array = new Array();
+
+        while (c != eof) {
+            // skip whitespaces
+            while (c == ' ' || c == '\t' || c == '\r') {
+                c = data.charAt(++i); // read next char
+            }
+
+            // get value
+            var value = "";
+            if (c == '\"') {
+                // value enclosed by double-quotes
+                c = data.charAt(++i);
+
+                do {
+                    if (c != '\"') {
+                        // read a regular character and go to the next character
+                        value += c;
+                        c = data.charAt(++i);
+                    }
+
+                    if (c == '\"') {
+                        // check for escaped double-quote
+                        var cnext = data.charAt(i+1);
+                        if (cnext == '\"') {
+                            // this is an escaped double-quote.
+                            // Add a double-quote to the value, and move two characters ahead.
+                            value += '\"';
+                            i += 2;
+                            c = data.charAt(i);
+                        }
+                    }
+                }
+                while (c != eof && c != '\"');
+
+                if (c == eof) {
+                    throw "Unexpected end of data, double-quote expected";
+                }
+
+                c = data.charAt(++i);
+            }
+            else {
+                // value without quotes
+                while (c != eof && c != delimeter && c!= newline) {
+                    value += c;
+                    c = data.charAt(++i);
+                }
+            }
+
+            // add the value to the array
+            if (array.length <= row)
+                array.push(new Array());
+            array[row].push(value);
+
+            // skip whitespaces
+            while (c == ' ' || c == '\t' || c == '\r') {
+                c = data.charAt(++i);
+            }
+
+            // go to the next row or column
+            if (c == delimeter) {
+                // to the next column
+                col++;
+            }
+            else if (c == newline) {
+                // to the next row
+                col = 0;
+                row++;
+            }
+            else if (c != eof) {
+                // unexpected character
+               throw "Delimiter expected after character " + i;
+            }
+
+            // go to the next character
+            c = data.charAt(++i);
+        }
+
+        return array;
     }
 </script>
 </html>

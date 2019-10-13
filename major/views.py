@@ -14,6 +14,8 @@ h2_lag_direction = []
 electrode_names = []
 step = None
 start = None
+old_select_s = -1  # 上次传入的起始时间下标
+old_select_l = -1  # 上次传入的时间长度
 
 def index(request):
     if request.method == "POST":
@@ -52,7 +54,7 @@ def index(request):
         fc_info = {"electrode_names": electrode_names,"filters": filters,"time": date_time, "windowSize": windowSize,
                    "step": step, "maxLag": maxLag, "start": start, "end":end, "section_iterations": section_iterations}
 
-        all_h2_max_direction(matData['aw_h2'], matData['aw_lag'])
+        # all_h2_max_direction(matData['aw_h2'], matData['aw_lag'],0, section_iterations)  fc分析的时候才计算
         # links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
         return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name)})
     return render(request, "index.html")
@@ -64,11 +66,12 @@ def getH2(request):
         try:
             s1 = int(request.POST.get('s1'))
             s2 = int(request.POST.get('s2'))
+            h2_threshold = float(request.POST.get('h2_threshold'))
             select_start = float(request.POST.get('select_start'))
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2, select_s, select_l)
+            s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2, select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
@@ -83,9 +86,19 @@ def fcAnalyse(request):
     '''
     if request.method == "POST":
         try:
+            global matData, start, step, old_select_s, old_select_l
             ez = to_lists(request.POST.get('ez'))
             pz = to_lists(request.POST.get('pz'))
             niz = to_lists(request.POST.get('niz'))
+            h2_threshold = float(request.POST.get('h2_threshold'))
+            select_start = float(request.POST.get('select_start'))
+            select_end = float(request.POST.get('select_end'))
+            select_s = int((select_start - start) / step)  # 筛选的起始时间下标
+            select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
+            if not (select_s == old_select_s and select_l == old_select_l):  # 只有两者都不相等的情况下才重新计算
+                old_select_s = select_s
+                old_select_l = select_l
+                all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "输入格式不正确！\n正确格式应如：1-3,6"})
 
@@ -187,7 +200,7 @@ def position(s1,s2,n):
     return p+s2-s1-1
 
 
-def h2_max_direction(h2, lag, s1, s2, select_s, select_l):
+def h2_max_direction(h2, lag, s1, s2, select_s, select_l, h2_threshold):
     '''
     s1,s2代表数字，如 0,3
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
@@ -197,7 +210,6 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l):
     # pnum = h2.shape[2]  # 时间点的数量
     h2_max = [None] * select_l
     lag_max = [None] * select_l
-    h2_direct = [0] * select_l
 
     positive = []
     negative = []
@@ -205,30 +217,38 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l):
     for pi in range(select_s, select_s + select_l):
         select_i = pi - select_s
         if h2[s1, s2, pi] >= h2[s2, s1, pi]:
-            h2_max[select_i] = h2[s1, s2, pi]
-            lag_max[select_i] = lag[s1, s2, pi]
+            if h2[s1, s2, pi] >= h2_threshold:
+                h2_max[select_i] = h2[s1, s2, pi]
+                lag_max[select_i] = lag[s1, s2, pi]
 
-            if lag_max[select_i] > 0:
-                h2_direct[select_i] = -1
-                negative.append(h2_max[select_i])
-            elif lag_max[select_i] < 0:
-                h2_direct[select_i] = 1
-                positive.append(h2_max[select_i])
+                if lag_max[select_i] > 0:
+                    negative.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    positive.append(h2_max[select_i])
+            else:
+                h2_max[select_i] = 0
+                lag_max[select_i] = 0
 
         else:
-            h2_max[select_i] = h2[s2, s1, pi]
-            lag_max[select_i] = lag[s2, s1, pi]
+            if h2[s2, s1, pi] >= h2_threshold:
+                h2_max[select_i] = h2[s2, s1, pi]
+                lag_max[select_i] = lag[s2, s1, pi]
 
-            if lag_max[select_i] > 0:
-                h2_direct[select_i] = 1
-                positive.append(h2_max[select_i])
-            elif lag_max[select_i] < 0:
-                h2_direct[select_i] = -1
-                negative.append(h2_max[select_i])
+                if lag_max[select_i] > 0:
+                    positive.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    negative.append(h2_max[select_i])
+            else:
+                h2_max[select_i] = 0
+                lag_max[select_i] = 0
 
     sp = sum(positive)
     sn = sum(negative)
-    nw_direction = (h2_direct.count(1) - h2_direct.count(-1)) / select_l
+    lpn = len(positive) + len(negative)
+    if lpn == 0:
+        nw_direction = 0
+    else:
+        nw_direction = (len(positive) - len(negative)) / lpn
     if sp + sn == 0:
         w_direction = 0
     else:
@@ -236,13 +256,13 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l):
     return h2_max, lag_max, nw_direction, w_direction
 
 
-def all_h2_max_direction(h2, lag):
+def all_h2_max_direction(h2, lag, select_s, select_l, h2_threshold):
     enum = h2.shape[0]  # 电极点的数量
     global h2_lag_direction  # h2_max, lag_max, nw_direction, w_direction
     h2_lag_direction.clear()
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, 0, h2.shape[2])) # h2.shape[2] 时间点的数量
+            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold))
 
 
 def out_in(h2, lag, select_s, select_l, h2_threshold):
