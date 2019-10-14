@@ -1,0 +1,91 @@
+table.table-bordered th {
+    text-align: center;
+}
+#time_marks tr td{
+    vertical-align: middle;
+}
+#time_marks tr td button{
+    margin-left: 10px;
+    margin-right: 10px;
+}
+#collapseOne .slider.slider-horizontal {
+    max-width: 600px;
+    min-width: 200px;
+    width: 65%;
+    height: 20px;
+}
+.slider-selection {
+    background: red;
+}
+
+input.button{
+    display: inline-block;
+}
+#h2_threshold{
+    display: inline-block;
+    width: 220px;
+    height: 30px;
+}
+.tab1 > tbody > tr:nth-child(2n-1) > td,
+.tab1 > tbody > tr:nth-child(2n-1) > th {
+    /*background-color: #afd9ee;*/
+    background-color: rgba(0,255,255,0.1);
+ }
+
+.tab1 > tbody > tr:nth-child(2n) > td,
+.tab1 > tbody > tr:nth-child(2n) > th {
+    /*background-color: #8EB2D2;*/
+    background-color: rgba(120,100,130,0.1);
+ }
+
+/*.axis path,*/
+/*.axis line{*/
+    /*fill:none;*/
+    /*stroke:black;*/
+    /*shape-rendering:crispEdges;*/
+/*}*/
+
+.axis_line text{
+    font-family: sans-serif;
+    font-size: 12px;
+}
+.axis_violin text {
+    font-family: sans-serif;
+    font-size: 15px;
+}
+div.tooltip1 {
+    position: absolute;
+    text-align: center;
+    width: 90px;
+    height: 22px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0;
+    border-radius: 8px;
+    pointer-events: none;
+}
+div.tooltip2 {
+    position: absolute;
+    text-align: center;
+    width: 96px;
+    height: 68px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0;
+    border-radius: 8px;
+    pointer-events: none;
+}
+#line_tab{
+    display: inline-block;
+    width: 400px;
+    text-align: center;
+}
+#line_tab caption{
+    font-size: 26px;
+    font-weight: bold;
+    color: orangered;
+    width: 400px;
+    text-align: center;
+}

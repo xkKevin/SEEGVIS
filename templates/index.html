@@ -4,108 +4,25 @@
     <meta charset="UTF-8">
     <title>SEEGVIS</title>
     <link rel="icon" href="/static/data/eeg3.jpg">
-    <script src="/static/js/jquery.min.js"></script>
-    <script src="/static/js/bootstrap.min.js"></script>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <script src="/static/js/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.3.0/echarts.min.js"></script>
     <script src="/static/js/echarts-gl.min.js"></script>
 
-    <link href="/static/css/bootstrap-slider.css" rel="stylesheet">
-    <script type="text/javascript" src="/static/js/bootstrap-slider.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.6.2/css/bootstrap-slider.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.6.2/bootstrap-slider.min.js"></script>
 
-    <script src="/static/js/visChart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.11/css/bootstrap-select.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
 
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
-    <style type="text/css">
-        table.table-bordered th {
-            text-align: center;
-        }
-        #time_marks tr td{
-            vertical-align: middle;
-        }
-        #time_marks tr td button{
-            margin-left: 10px;
-            margin-right: 10px;
-        }
-        #collapseOne .slider.slider-horizontal {
-            max-width: 800px;
-            min-width: 200px;
-            width: 41%;
-            height: 20px;
-        }
-        .slider-selection {
-            background: red;
-        }
 
-        input.button{
-            display: inline-block;
-        }
-        .tab1 > tbody > tr:nth-child(2n-1) > td,
-        .tab1 > tbody > tr:nth-child(2n-1) > th {
-            {#background-color: #afd9ee;#}
-             background-color: rgba(0,255,255,0.1);
-         }
-
-        .tab1 > tbody > tr:nth-child(2n) > td,
-        .tab1 > tbody > tr:nth-child(2n) > th {
-            {#background-color: #8EB2D2;#}
-            background-color: rgba(120,100,130,0.1);
-         }
-        <!--
-        .axis path,
-        .axis line{
-            fill:none;
-            stroke:black;
-            shape-rendering:crispEdges;
-        }
-        -->
-        .axis_line text{
-            font-family: sans-serif;
-            font-size: 12px;
-        }
-        .axis_violin text {
-            font-family: sans-serif;
-            font-size: 15px;
-        }
-        div.tooltip1 {
-            position: absolute;
-            text-align: center;
-            width: 90px;
-            height: 22px;
-            padding: 2px;
-            font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-        }
-        div.tooltip2 {
-            position: absolute;
-            text-align: center;
-            width: 96px;
-            height: 68px;
-            padding: 2px;
-            font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-        }
-        #line_tab{
-            display: inline-block;
-            width: 400px;
-            text-align: center;
-        }
-        #line_tab caption{
-            font-size: 26px;
-            font-weight: bold;
-            color: orangered;
-            width: 400px;
-            text-align: center;
-        }
-    </style>
-
+    <script src="/static/js/seegvis.js"></script>
+    <script src="/static/js/visChart.js"></script>
+    <link rel="stylesheet" href="/static/css/seegvis.css">
 </head>
 <body>
 <div class="panel-group" id="accordion">
@@ -129,29 +46,46 @@
                     {% endif %}
                 </form>
                 {% if fc_info %}
-                <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 90%">
-                    <caption style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 10px;">
-                        当前上传的数据文件为：<font color="red">{{ file_name }}</font>
-                    </caption>
-                    <tbody>
-                    {% for key,value in fc_info.items %}
-                        <tr class="active">
-                            <td>{{ key }}</td>
-                            <td>{{ value }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                <div style="margin-top:40px; text-align: center;">
-                &nbsp;&nbsp;<b>筛选时间：{{ fc_info.start }}&nbsp;&nbsp;&nbsp;&nbsp;</b><input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;{{ fc_info.end }}</b>
-                    <div style="display:inline-block; width:200px; margin-left: 10px; vertical-align: bottom;">
-                        <div class="input-group">
-                            <span class="input-group-addon">h2阈值</span>
-                            <input id="h2_threshold" type="text" class="form-control" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
-                        </div>
+                <div style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 15px;margin-top: 10px;">
+                    当前上传的数据文件为：<font color="red">{{ file_name }}</font>
+                </div>
+                <div style="display: inline-block;width: 62%;">
+                    <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 95%">
+                        <tbody>
+                        {% for key,value in fc_info.items %}
+                            <tr class="active">
+                                <td>{{ key }}</td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display: inline-block; width: 35%; vertical-align: top;">
+                    <h3>控制面板&nbsp;(DashBoard)</h3>
+                    <div style="margin-top: 30px;">
+                        <b>筛选通道：</b>
+                        <select class="selectpicker" multiple data-live-search="true" data-actions-box="true">
+                            {% for electrode in fc_info.electrode_names %}
+                                <option>{{ electrode }}</option>
+                            {% endfor %}
+                        </select>
+                        &nbsp;&nbsp;&nbsp;当前共选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
                     </div>
-                &nbsp;&nbsp;<button class="btn btn-success" onclick="select_time()">确认</button>&nbsp;
-                    <div id="select_confirm" style="display:inline-block;font-size: larger; width: 105px; text-align: left;"></div>
+                    <div style="margin-top: 35px;">
+                        <b>筛选时间：{{ fc_info.start }}</b>&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{ fc_info.end }}</b>
+                    </div>
+                    <div style="margin-top: 35px;">
+                        <b>设置阈值：</b>
+                        <input id="h2_threshold" type="text" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                    </div>
+                    <div style="margin-top:25px;">
+                    &nbsp;&nbsp;<button class="btn btn-default" onclick="select_confirm()">确认选择</button>&nbsp;
+                        <button class="btn btn-warning" onclick="select_reset()">恢复默认</button>&nbsp;&nbsp;
+                        <div id="select_confirm" style="display:inline-block;font-size: larger; text-align: left;"></div>
+                    </div>
                 </div>
                 <div style="margin-top: 20px; text-align: center">
                     <div>
@@ -369,6 +303,7 @@
     var fc_info = {{ fc_info | default:"null"|safe }}; // 注意： 冒号后面不能有空格！ 引号中可以是对象，如 :"{xk:12}"
     var init = {{ file_name|default:"null"|safe }};
     var msg = {{ msg|default:"null"|safe }};
+    var electrodes_len = 0;  // 可以用来判断是否传入文件
     if(msg){
         alert(msg);
     }
@@ -400,6 +335,9 @@
     });
 
     var time_slider = null;
+    var selectpicker = $('.selectpicker');
+    var select_ei = [];  // 选择电极（通道）的下标数组
+
     if (init){
         time_slider = new Slider('#time_slider', {
             min: fc_info.start,
@@ -414,6 +352,17 @@
             //console.log("NN",n);
         });
         */
+        selectpicker.selectpicker({});
+        selectpicker.selectpicker('selectAll');
+        selectpicker.selectpicker('render');
+        electrodes_len = selectpicker.val().length;
+        $("#electrodes_num").text(electrodes_len);
+        selectpicker.on("change",function () {
+            $("#electrodes_num").text(selectpicker.val().length);
+        });
+        for (let i =0; i < electrodes_len; i++){
+            select_ei.push(i);
+        }
     }
 
     $(".submit_mat").click(function(e){
@@ -441,7 +390,8 @@
 
     var select_start = {{ fc_info.start | default:"null"|safe }};
     var select_end = {{ fc_info.end | default:"null"|safe }};
-    function select_time() {
+
+    function select_confirm() {
         let threshold = $("#h2_threshold").val();
         var reg = /^0(\.[0-9]*)?$/;   // 匹配 [0,1) 的小数，包括 "0."
         if (!reg.test(threshold)){
@@ -450,10 +400,17 @@
             h2_threshold = parseFloat(threshold);
             select_start = time_slider.getValue()[0];
             select_end = time_slider.getValue()[1];
+            let select_electrodes = selectpicker.val();
+            select_ei = [];
+            for (let i =0; i < selectpicker.val().length; i++){
+                select_ei.push(fc_info.electrode_names.indexOf(select_electrodes[i]));
+            }
+
             $("#h2_threshold").val(h2_threshold);
-            $("#select_confirm").css("color","green").text("设置成功");
             h2_threshold_slider.setValue(h2_threshold);
             $("#h2_threshold_value").text(h2_threshold);
+
+            $("#select_confirm").css("color","green").text("设置成功");
         }
         $("#select_confirm").css("visibility","visible");
         window.setTimeout(function() {
@@ -463,6 +420,25 @@
         $("#select_confirm").fadeIn();
         $("#select_confirm").fadeOut();
         */
+    }
+    function select_reset() {
+        select_start = {{ fc_info.start | default:"null"|safe }};
+        select_end = {{ fc_info.end | default:"null"|safe }};
+        select_ei = [];
+        for (let i =0; i < electrodes_len; i++){
+            select_ei.push(i);
+        }
+        h2_threshold = 0;
+
+        time_slider.setValue([select_start, select_end]);
+        selectpicker.selectpicker('selectAll');
+        $("#electrodes_num").text(selectpicker.val().length);
+        $("#h2_threshold").val(0);
+
+        $("#select_confirm").css("color","green").css("visibility","visible").text("恢复成功");
+        window.setTimeout(function() {
+            $("#select_confirm").css("visibility","hidden");
+        },2000)
     }
     var mark_select = null;
     var marks_list = [['Name','Start','End','Description']];
@@ -483,7 +459,7 @@
     $("#time_marks").delegate("button.apply", "click", function () {
         let mark_start = parseFloat($(this).parent().siblings()[1].innerText);
         let mark_end = parseFloat($(this).parent().siblings()[2].innerText);
-        if (mark_start == "NaN" || mark_end == "NaN"){
+        if (isNaN(mark_start) || isNaN(mark_end)){
             alert("请将起始时间和终止时间设为数字！");
             return;
         }
@@ -499,322 +475,77 @@
     $("#time_marks").delegate("button.delete", "click", function () {
         $(this).parent().parent().remove();
     });
-    function operateMarks() {
-        if ($("#operate_type").text() == "新增"){
-            addMarks($("#add_name").val(),$("#add_start").val(),$("#add_end").val(),$("#add_desc").val());
-        } else{
-            modifyMarks();
-        }
-        cancel();
-    }
-    function cancel() {
-        $("#add_name").val("");
-        $("#add_start").val("");
-        $("#add_end").val("");
-        $("#add_desc").val("");
-    }
-    function addMarks(name,start,end,desc){
-        let tr = document.createElement("tr");
-        let td_name = document.createElement("td");
-        td_name.innerText = name;
-        let td_start = document.createElement("td");
-        td_start.innerText = start;
-        let td_end = document.createElement("td");
-        td_end.innerText = end;
-        let td_desc = document.createElement("td");
-        td_desc.innerText = desc;
-        let td_apply = document.createElement("td");
-        let apply_button = document.createElement("button");
-        apply_button.innerText = "应用";
-        apply_button.setAttribute("class","btn btn-warning apply");
-        let modify_button = document.createElement("button");
-        modify_button.innerText = "修改";
-        modify_button.setAttribute("class","btn btn-warning modify");
-        modify_button.setAttribute("data-toggle","modal");
-        modify_button.setAttribute("data-target","#myModal");
-
-        let delete_button = document.createElement("button");
-        delete_button.innerText = "删除";
-        delete_button.setAttribute("class","btn btn-warning delete");
-
-        td_apply.appendChild(modify_button);
-        td_apply.appendChild(delete_button);
-        td_apply.appendChild(apply_button);
-        tr.appendChild(td_name);
-        tr.appendChild(td_start);
-        tr.appendChild(td_end);
-        tr.appendChild(td_desc);
-        tr.appendChild(td_apply);
-        $("#time_marks").append(tr);
-        // $("#modify_button").on("onclick", modifyMarks(td_name.innerText,td_start.innerText,td_end.innerText,td_desc.innerText));
-    }
-    function modifyMarks() {
-        mark_select.siblings()[0].innerText = $("#add_name").val();
-        mark_select.siblings()[1].innerText = $("#add_start").val();
-        mark_select.siblings()[2].innerText = $("#add_end").val();
-        mark_select.siblings()[3].innerText = $("#add_desc").val();
-    }
-    function saveMarks() {
-        //alert("此功能暂未实现！") [0].childNodes[1].innerText
-        let all_marks = $("#time_marks").children();
-        if (all_marks.length == 0){
-            alert("当前没有任何标记！");
-            return;
-        }
-        /*
-        marks_list = all_marks.map(function (mark) {
-            return [mark.childNodes[0].innerText,mark.childNodes[1].innerText,mark.childNodes[2].innerText,mark.childNodes[3].innerText];
-        });
-        */
-        for (let i=0;i<all_marks.length; i++){
-            marks_list.push([all_marks[i].childNodes[0].innerText,all_marks[i].childNodes[1].innerText,all_marks[i].childNodes[2].innerText,all_marks[i].childNodes[3].innerText])
-        }
-        // console.log(marks_list);
-        exportToCsv('time_marks.csv', marks_list);
-    }
-    function readToArray(data) {
-        for (let i=1; i<data.length;i++){
-            addMarks(data[i][0],data[i][1],data[i][2],data[i][3]);
-        }
-    }
+    // 之所以以下文件不放进单独的js文件中，是因为引用了Django模板
     function getH2() {
-        if(!fc_info){
-            alert("请先上传.mat数据文件!");
-            return;
-        }
-        var s1 = parseInt($("#s1").val());
-        var s2 = parseInt($("#s2").val());
-        if (isNaN(s1)||isNaN(s2)||s1<0||s2<0){
-            //alert(s1+"\n"+s2);
-            alert("请正确输入两电极信号（格式需为非负整数）！");
-            return;
-        }
-        var elen = fc_info["electrode_names"].length;
-        if(s1>=elen || s2>=elen){
-            alert("输入信号应小于"+elen+" !");
-            return;
-        }
-        $.get('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
-                if(result["result"] === true){
-                    //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
-                    var s1_s2 = result["s1_s2"];
-                    var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]];
-                    var lens = parseInt((select_end - select_start)/fc_info.step + 1);
-                    //var times = d3.range(fc_info["start"],fc_info["start"]+lens);
-                    var data = [];
-                    for(i=0;i<lens;i++){
-                        data.push({"time":select_start + i * fc_info.step,"h2":s1_s2[0][i]})
-                    }
-                    linechart(data,signal,lens,s1_s2[2],s1_s2[3],twoElectCO(signal,one_elect_co));
-                }else {
-                    alert("Failed!\n message:"+result["msg"]);
-                }
-        });
+    if(!fc_info){
+        alert("请先上传.mat数据文件!");
+        return;
     }
+    var s1 = parseInt($("#s1").val());
+    var s2 = parseInt($("#s2").val());
+    if (isNaN(s1)||isNaN(s2)||s1<0||s2<0){
+        //alert(s1+"\n"+s2);
+        alert("请正确输入两电极信号（格式需为非负整数）！");
+        return;
+    }
+    var elen = fc_info["electrode_names"].length;
+    if(s1>=elen || s2>=elen){
+        alert("输入信号应小于"+elen+" !");
+        return;
+    }
+    $.get('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
+        function(result, statue){
+            if(result["result"] === true){
+                //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+                var s1_s2 = result["s1_s2"];
+                var signal = [fc_info["electrode_names"][s1],fc_info["electrode_names"][s2]];
+                var lens = parseInt((select_end - select_start)/fc_info.step + 1);
+                //var times = d3.range(fc_info["start"],fc_info["start"]+lens);
+                var data = [];
+                for(i=0;i<lens;i++){
+                    data.push({"time":select_start + i * fc_info.step,"h2":s1_s2[0][i]})
+                }
+                linechart(data,signal,lens,s1_s2[2],s1_s2[3],twoElectCO(signal,one_elect_co));
+            }else {
+                alert("Failed!\n message:"+result["msg"]);
+            }
+    });
+}
     function fcAnalyse(){
-        if (!init){
-            alert("请先上传.mat数据文件!");
-            return;
-        }
-        var ez = $("#EZ").val();
-        var pz = $("#PZ").val();
-        var niz = $("#NIZ").val();
-        if (!(ez || pz || niz)){
-            alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
-            return;
-        }
-        var fc_result = document.getElementById("fc_result");
-        fc_result.style.display = "none";
-        // alert(ez+"\n"+pz+"\n"+niz)
-        $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},function(result, statue){
-                if(result["result"] === true){
-                    //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
-                    var zones = result["zones"];
-                    //alert(zones);
-                    fc_result.style.display = "inline";
-                    violinBwt();
-                }else {
-                    alert(result["msg"])
-                }
-        });
+    if (!init){
+        alert("请先上传.mat数据文件!");
+        return;
     }
-    function showCoordinate(files) {
-        //console.log(files);
-        if (files[0]) {
-            var reader = new FileReader();
-            reader.readAsText(files[0]);
-            /*
-            reader.onload = function () {
-                globaldata = this.result;
+    var ez = $("#EZ").val();
+    var pz = $("#PZ").val();
+    var niz = $("#NIZ").val();
+    if (!(ez || pz || niz)){
+        alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+        return;
+    }
+    var fc_result = document.getElementById("fc_result");
+    fc_result.style.display = "none";
+    // alert(ez+"\n"+pz+"\n"+niz)
+    $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
+        function(result, statue){
+            if(result["result"] === true){
+                //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+                var zones = result["zones"];
+                //alert(zones);
+                fc_result.style.display = "inline";
+                violinBwt();
+            }else {
+                alert(result["msg"])
             }
-            reader.onloadend = function (evt) {
-                if(evt.target.readyState == FileReader.DONE){
-                    globaldata.push(csv2array(reader.result.toString()));
-                }
-            };
-            */
-            let electrode_names = fc_info['electrode_names'];
-            reader.onload = function (f) {
-                //var result = document.getElementById("result");
-                //显示文件
-                one_elect.clear();
-                for(var i=0;i<electrode_names.length;i++){
-                    var two_e = electrode_names[i].split("-");
-                    one_elect.add(two_e[0]);
-                    one_elect.add(two_e[1]);
-                }
-                var co_data={"ez":[],"pz":[],"niz":[]};
-                var relArr = this.result.split("\r\n");
-                //var regp = new RegExp(".*,\".*,.*\"$");
-                var regp = /[^\w\s,.-]/;
-                if (!$.isEmptyObject(relArr) && relArr.length > 1) {
-                    for (var cokey in one_elect_co){
-                        //delete one_elect_co.cokey; 清空字典，只能使用下面的方法
-                        delete one_elect_co[cokey];
-                    }
-                    var title_key = relArr[0].split(",");
-                    for (var key = 1, len = relArr.length; key < len; key++) {
-                        var values = relArr[key];
-                        if (regp.test(values)) {
-                            alert("文件内容中含有非法符号，请修改后再上传！含有非法符号的内容为：" + values);
-                            return;
-                        }
-                        if (!$.isEmptyObject(values)) {
-                            var obj = [];
-                            var objArr = values.split(",");
-                            for (var j=1;j<objArr.length;j++){
-                                obj.push(objArr[j].replace(/\s/ig,'')); //过滤空白字符
-                            }
-                            if (objArr[0] === "ez"){
-                                co_data.ez.push(obj);
-                            } else if (objArr[0] === "pz"){
-                                co_data.pz.push(obj);
-                            }else if (objArr[0] === "niz"){
-                                co_data.niz.push(obj);
-                            }
-
-                            if (isInSet(obj[3],one_elect)){
-                                one_elect_co[obj[3]] = strArr2floatArr(obj.slice(0,-1));
-                            }
-                        }
-                    }
-                }
-                $("#codination").remove();
-                var newM = $("<div id='codination' style='width: 85%;height:500px;' align='center'></div>");
-                newM.appendTo($("#electrodes"));
-                scatter3D(co_data,'codination');
-                /*
-                var s1 = $("#s1").val();
-                var s2 = $("#s2").val();
-                if (typeof(s1)==="number"&&typeof(s2)==="number"){
-                }
-                */
-                ez_p.length = 0;
-                pz_p.length = 0;
-                niz_p.length = 0;
-                //console.log(co_data)
-                for(var ii=0;ii<electrode_names.length;ii++){
-                    var one_e = electrode_names[ii].split("-")[0];
-                    //console.log(one_e)
-                    var flag = true;
-                    for (var jj=0;jj<co_data["ez"].length;jj++){
-                        if (co_data["ez"][jj][3].includes(one_e)){
-                            ez_p.push(ii);
-                            flag = false;
-                            break;
-                        }
-                    }
-                    if (flag){
-                        for (var jj=0;jj<co_data["pz"].length;jj++){
-                            if (co_data["pz"][jj][3].includes(one_e)){
-                                pz_p.push(ii);
-                                flag = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (flag){
-                        for (var jj=0;jj<co_data["niz"].length;jj++){
-                            if (co_data["niz"][jj][3].includes(one_e)){
-                                niz_p.push(ii);
-                                //flag = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-                //console.log(ez_p,pz_p,niz_p)
-            };
-        }
-    }
-    function assignZone() {
-        if (one_elect.size === 0){
-            alert("您未上传空间坐标文件,\n无法默认取值！");
-            return;
-        }
-        if (ez_p.length+pz_p.length+niz_p.length === 0){
-            alert("您上传的空间坐标文件与基本信息中的电极不符,\n无法默认取值！");
-            return;
-        }
-        var ez_s="";
-        var pz_s="";
-        var niz_s="";
-        for (i of ez_p){
-            ez_s += ", "+i;
-        }
-        for (i of pz_p){
-            pz_s += ", "+i;
-        }
-        for (i of niz_p){
-            niz_s += ", "+i;
-        }
-        if (ez_s.length){
-            $("#EZ").val(ez_s.slice(1))
-        }
-        if (pz_s.length){
-            $("#PZ").val(pz_s.slice(1))
-        }
-        if (niz_s.length){
-            $("#NIZ").val(niz_s.slice(1))
-        }
-    }
-    function isInSet(item,set) {
-        for (var si of set){
-            if (item === si){
-                return true;
-            }
-        }
-        return false;
-    }
-    function strArr2floatArr(strArr) {
-        var floatArr = [];
-        for (var sai of strArr){
-            floatArr.push(parseFloat(sai));
-        }
-        return floatArr;
-    }
-    function twoElectCO(signal,co) {
-        /*
-         返回电极对的中心坐标
-         signal的格式例如： ['C4-C5', 'C6-C7']
-          */
-        var s1 = signal[0].split('-');
-        var s2 = signal[1].split('-');
-        return [centerPoint(co[s1[0]],co[s1[1]]),centerPoint(co[s2[0]],co[s2[1]])]
-    }
-    function centerPoint(co1,co2) {
-        if (!(co1&&co2)){
-            return null;
-        }
-        return [(co1[0]+co2[0])/2,(co1[1]+co2[1])/2,(co1[2]+co2[2])/2]
-    }
-
+    });
+}
     function outAnalyse(e, type) {
-        if(!fc_info){
-            alert("请先上传.mat数据文件!");
-            return;
-        }
-        $.get('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},function(result, statue){
+    if(!fc_info){
+        alert("请先上传.mat数据文件!");
+        return;
+    }
+    $.get('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold, "select_ei":JSON.stringify(select_ei)},
+        function(result, statue){
             if(result["result"] === true) {
                 let out_links = result["out_links"];
                 let in_links = result["in_links"];
@@ -825,7 +556,7 @@
                 $(e).siblings().removeClass().addClass("btn btn-default");
                 $(e).removeClass().addClass("btn btn-success");
                 // console.log(out_in_links, links);
-                let electrode_names = fc_info.electrode_names;
+                let select_electrode_names = [];
                 let stream_data = [];
                 let heap_data = [];
                 let time = [];
@@ -834,6 +565,9 @@
                 let min = 0;
                 let max = 0;
                 let value = 0;
+                for (let j = 0; j < len_e; j++) {  // 初始化所选电极通道名
+                    select_electrode_names.push(fc_info.electrode_names[select_ei[j]]);
+                }
                 for (let i = 0; i < len_t; i++) {  // i 是时间
                     let t = select_start + i * step;
                     time.push(t);
@@ -850,7 +584,7 @@
                         else if (type === 'OUT-IN') {
                             value = out_links[i][j] - in_links[i][j];
                         }
-                        stream_data.push([t, value, electrode_names[j]]);
+                        stream_data.push([t, value, select_electrode_names[j]]);
                         heap_data.push([i, len_e - j - 1, value]);
                         if (value > max) {
                             max = value;
@@ -867,159 +601,12 @@
                 }
                 // console.log(stream_data);
                 $("#out_chart").css("display","block");
-                stream_out_in(stream_data, type, electrode_names, [select_start, time[len_t - 1]], step);
-                heat_out_in(heap_data, min, max, electrode_names.concat().reverse(), time, type);
+                stream_out_in(stream_data, type, select_electrode_names, [select_start, time[len_t - 1]], step);
+                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), time, type);
             } else{
                 alert("Failed!\n message:"+result["msg"]);
             }
-        });
-    }
-
-    function exportToCsv(filename, rows) {
-        var processRow = function (row) {
-            var finalVal = '';
-            for (var j = 0; j < row.length; j++) {
-                var innerValue = row[j] === null ? '' : row[j].toString();
-                if (row[j] instanceof Date) {
-                    innerValue = row[j].toLocaleString();
-                }
-                var result = innerValue.replace(/"/g, '""');
-                if (result.search(/("|,|\n)/g) >= 0)
-                    result = '"' + result + '"';
-                if (j > 0)
-                    finalVal += ',';
-                finalVal += result;
-            }
-            return finalVal + '\n';
-        };
-
-        var csvFile = '';
-        for (var i = 0; i < rows.length; i++) {
-            csvFile += processRow(rows[i]);
-        }
-
-        var blob = new Blob([csvFile], { type: 'text/csv;charset=UTF-8;' });
-        if (navigator.msSaveBlob) { // IE 10+
-            navigator.msSaveBlob(blob, filename);
-        } else {
-            var link = document.createElement("a");
-            if (link.download !== undefined) { // feature detection
-                // Browsers that support HTML5 download attribute
-                var url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", filename);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-    }
-    function readFromCsv(file_e, callback) {
-        // var file = document.getElementById(file_name).files[0];
-        var file = file_e.files[0];
-        var reader = new FileReader();
-        reader.readAsText(file,'UTF-8');
-        //读取完文件之后，执行下面这个回调函数：
-        reader.onload = function (evt) {
-            let data = csv2array(reader.result.toString());
-            // console.log(data);
-            callback && callback(data);
-        }
-    }
-    function csv2array(data, delimeter) {
-        // Retrieve the delimeter
-        if (delimeter == undefined)
-            delimeter = ',';
-        if (delimeter && delimeter.length > 1)
-            delimeter = ',';
-
-        // initialize variables
-        var newline = '\n';
-        var eof = '';
-        var i = 0;
-        var c = data.charAt(i);
-        var row = 0;
-        var col = 0;
-        var array = new Array();
-
-        while (c != eof) {
-            // skip whitespaces
-            while (c == ' ' || c == '\t' || c == '\r') {
-                c = data.charAt(++i); // read next char
-            }
-
-            // get value
-            var value = "";
-            if (c == '\"') {
-                // value enclosed by double-quotes
-                c = data.charAt(++i);
-
-                do {
-                    if (c != '\"') {
-                        // read a regular character and go to the next character
-                        value += c;
-                        c = data.charAt(++i);
-                    }
-
-                    if (c == '\"') {
-                        // check for escaped double-quote
-                        var cnext = data.charAt(i+1);
-                        if (cnext == '\"') {
-                            // this is an escaped double-quote.
-                            // Add a double-quote to the value, and move two characters ahead.
-                            value += '\"';
-                            i += 2;
-                            c = data.charAt(i);
-                        }
-                    }
-                }
-                while (c != eof && c != '\"');
-
-                if (c == eof) {
-                    throw "Unexpected end of data, double-quote expected";
-                }
-
-                c = data.charAt(++i);
-            }
-            else {
-                // value without quotes
-                while (c != eof && c != delimeter && c!= newline) {
-                    value += c;
-                    c = data.charAt(++i);
-                }
-            }
-
-            // add the value to the array
-            if (array.length <= row)
-                array.push(new Array());
-            array[row].push(value);
-
-            // skip whitespaces
-            while (c == ' ' || c == '\t' || c == '\r') {
-                c = data.charAt(++i);
-            }
-
-            // go to the next row or column
-            if (c == delimeter) {
-                // to the next column
-                col++;
-            }
-            else if (c == newline) {
-                // to the next row
-                col = 0;
-                row++;
-            }
-            else if (c != eof) {
-                // unexpected character
-               throw "Delimiter expected after character " + i;
-            }
-
-            // go to the next character
-            c = data.charAt(++i);
-        }
-
-        return array;
-    }
+    });
+}
 </script>
 </html>

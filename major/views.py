@@ -146,9 +146,10 @@ def outAnalyse(request):
             select_start = float(request.GET.get('select_start'))
             select_end = float(request.GET.get('select_end'))
             h2_threshold = float(request.GET.get('h2_threshold'))
+            select_ei = json.loads(request.GET.get('select_ei'))  # 将字符串格式转化为json对象
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            links = out_in(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)  # [out_links, in_links]
+            links = out_in(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold, select_ei)  # [out_links, in_links]
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "时间筛选有误！"})
         return JsonResponse({'result': True, 'out_links': links[0], "in_links": links[1]})
@@ -265,12 +266,13 @@ def all_h2_max_direction(h2, lag, select_s, select_l, h2_threshold):
             h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold))
 
 
-def out_in(h2, lag, select_s, select_l, h2_threshold):
+def out_in(h2, lag, select_s, select_l, h2_threshold, select_ei):
     '''
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
+    select_ei：表示所选电极（通道）下标数组
     返回每一个节点在筛选的时间内的out与in links值
     '''
-    enum = h2.shape[0]  # 电极点的数量
+    enum = len(select_ei)  # 所选电极点的数量
     # tnum = h2.shape[2] 时间点的数量
     out_links = [[0] * enum for i in range(select_l)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * select_l 错误写法
     in_links = [[0] * enum for i in range(select_l)]
@@ -278,26 +280,26 @@ def out_in(h2, lag, select_s, select_l, h2_threshold):
         for ei2 in range(ei1 + 1, enum):
             for pi in range(select_s, select_s + select_l):
                 select_i = pi - select_s
-                if h2[ei1, ei2, pi] >= h2[ei2, ei1, pi]:
-                    if h2[ei1, ei2, pi] >= h2_threshold:
-                        if lag[ei1, ei2, pi] > 0:
+                if h2[select_ei[ei1], select_ei[ei2], pi] >= h2[select_ei[ei2], select_ei[ei1], pi]:
+                    if h2[select_ei[ei1], select_ei[ei2], pi] >= h2_threshold:
+                        if lag[select_ei[ei1], select_ei[ei2], pi] > 0:
                             in_links[select_i][ei1] += 1
                             out_links[select_i][ei2] += 1
-                        elif lag[ei1, ei2, pi] < 0:
+                        elif lag[select_ei[ei1], select_ei[ei2], pi] < 0:
                             in_links[select_i][ei2] += 1
                             out_links[select_i][ei1] += 1
                 else:
-                    if h2[ei2, ei1, pi] >= h2_threshold:
-                        if lag[ei2, ei1, pi] > 0:
+                    if h2[select_ei[ei2], select_ei[ei1], pi] >= h2_threshold:
+                        if lag[select_ei[ei2], select_ei[ei1], pi] > 0:
                             in_links[select_i][ei2] += 1
                             out_links[select_i][ei1] += 1
-                        elif lag[ei2, ei1, pi] < 0:
+                        elif lag[select_ei[ei2], select_ei[ei1], pi] < 0:
                             in_links[select_i][ei1] += 1
                             out_links[select_i][ei2] += 1
 
     global electrode_names, start, step
     data = pd.DataFrame(np.c_[out_links,in_links], index=[start + step * i for i in range(select_s, select_s + select_l)],
-                        columns=[np.r_[['OUT'] * enum, ['IN'] * enum],electrode_names * 2])
+                        columns=[np.r_[['OUT'] * enum, ['IN'] * enum],[electrode_names[i] for i in select_ei] * 2])
     data.to_excel("static/data/out_result.xls")
     return out_links, in_links
     # JsonResponse({'out': out_links, 'in': out_links})
