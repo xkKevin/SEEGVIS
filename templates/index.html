@@ -65,7 +65,7 @@
                     <h3>控制面板&nbsp;(DashBoard)</h3>
                     <div style="margin-top: 30px;">
                         <b>筛选通道：</b>
-                        <select class="selectpicker" multiple data-live-search="true" data-actions-box="true">
+                        <select id="select_channels" class="selectpicker" multiple data-live-search="true" data-actions-box="true">
                             {% for electrode in fc_info.electrode_names %}
                                 <option>{{ electrode }}</option>
                             {% endfor %}
@@ -80,6 +80,21 @@
                     <div style="margin-top: 35px;">
                         <b>设置阈值：</b>
                         <input id="h2_threshold" type="text" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <b>筛选子波：</b>
+                        <select id="select_wave" class="selectpicker">
+                            <option>Any Wave</option>
+                            <option>Delta</option>
+                            <option>Theta</option>
+                            <option>Alpha</option>
+                            <option>Beta</option>
+                            <option>Gamma</option>
+                            <option>Gamma2</option>
+                            <option>Ripple</option>
+                            <option>Fast Ripple</option>
+                        </select>
+                        &nbsp;&nbsp;<span style="color:red;">筛选子波功能暂未实现！</span>
                     </div>
                     <div style="margin-top:25px;">
                     &nbsp;&nbsp;<button class="btn btn-default" onclick="select_confirm()">确认选择</button>&nbsp;
@@ -246,6 +261,9 @@
                             <td>
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
+                            <td style="padding-left: 10px;">
+                                <label class="btn btn-success" onclick="violin_play()"><i class="glyphicon glyphicon-play-circle"></i>&nbsp;播放</label>
+                            </td>
                             <td >
                                 <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_result.csv">点击下载FC分析结果</a>
                             </td>
@@ -291,6 +309,10 @@
                     </td>
                 </table>
                 <div id="out_chart" style="display: none; margin-top: 15px;">
+                    <!--
+                    <div id="out_in_river" style="display: inline-block;height: 500px; width: 58%; min-width: 800px"></div>
+                    <div id="out_in_heat" style="display: inline-block;height: 500px; width: 40%; min-width: 600px"></div>
+                    -->
                     <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
                     <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
                 </div>
@@ -335,9 +357,9 @@
     });
 
     var time_slider = null;
-    var selectpicker = $('.selectpicker');
+    var select_channels = $('#select_channels');
     var select_ei = [];  // 选择电极（通道）的下标数组
-
+    var select_wave = $("#select_wave");
     if (init){
         time_slider = new Slider('#time_slider', {
             min: fc_info.start,
@@ -352,13 +374,16 @@
             //console.log("NN",n);
         });
         */
-        selectpicker.selectpicker({});
-        selectpicker.selectpicker('selectAll');
-        selectpicker.selectpicker('render');
-        electrodes_len = selectpicker.val().length;
+        select_wave.selectpicker({});
+        select_wave.selectpicker('render');
+
+        select_channels.selectpicker({});
+        select_channels.selectpicker('selectAll');
+        select_channels.selectpicker('render');
+        electrodes_len = select_channels.val().length;
         $("#electrodes_num").text(electrodes_len);
-        selectpicker.on("change",function () {
-            $("#electrodes_num").text(selectpicker.val().length);
+        select_channels.on("change",function () {
+            $("#electrodes_num").text(select_channels.val().length);
         });
         for (let i =0; i < electrodes_len; i++){
             select_ei.push(i);
@@ -400,9 +425,9 @@
             h2_threshold = parseFloat(threshold);
             select_start = time_slider.getValue()[0];
             select_end = time_slider.getValue()[1];
-            let select_electrodes = selectpicker.val();
+            let select_electrodes = select_channels.val();
             select_ei = [];
-            for (let i =0; i < selectpicker.val().length; i++){
+            for (let i =0; i < select_channels.val().length; i++){
                 select_ei.push(fc_info.electrode_names.indexOf(select_electrodes[i]));
             }
 
@@ -431,8 +456,8 @@
         h2_threshold = 0;
 
         time_slider.setValue([select_start, select_end]);
-        selectpicker.selectpicker('selectAll');
-        $("#electrodes_num").text(selectpicker.val().length);
+        select_channels.selectpicker('selectAll');
+        $("#electrodes_num").text(select_channels.val().length);
         $("#h2_threshold").val(0);
 
         $("#select_confirm").css("color","green").css("visibility","visible").text("恢复成功");
@@ -601,12 +626,19 @@
                 }
                 // console.log(stream_data);
                 $("#out_chart").css("display","block");
-                stream_out_in(stream_data, type, select_electrode_names, [select_start, time[len_t - 1]], step);
-                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), time, type);
+                stream_out_in(stream_data,select_electrode_names, [select_start, time[len_t - 1]], step);
+                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), time);
             } else{
                 alert("Failed!\n message:"+result["msg"]);
             }
     });
 }
+    function violin_play() {
+        for (let play_i=select_start, ti = 0;play_i<=fc_info.end;play_i+=fc_info.step, ti++){
+            window.setTimeout(function() {
+                console.log(play_i);
+            },1200*ti);
+        }
+    }
 </script>
 </html>

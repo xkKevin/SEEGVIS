@@ -796,7 +796,7 @@ function subviolinFC(data,zone,electrodes) {
             });
 }
 
-function stream_out_in(data,type,electrode_names,time,step) {
+function stream_out_in(data,electrode_names,time,step) {
     /*
     console.log(links)
     var margin = {top: 10, right: 100, bottom: 30, left: 50},
@@ -824,11 +824,13 @@ function stream_out_in(data,type,electrode_names,time,step) {
     var dom = document.getElementById("out_in_river");
     var myChart = echarts.init(dom);
     var option = {
+        /*
         title: {
             text: type,
             top: 'bottom',
             left: 'center'
         },
+        */
         tooltip: {
             position: function (point, params, dom, rect, size) {
                 // point[0] 表示x轴，从左往右；point[1] 表示y轴，从上往下
@@ -908,18 +910,21 @@ function stream_out_in(data,type,electrode_names,time,step) {
     }
 }
 
-function heat_out_in(data,min,max,electrode_names,time,type) {
+function heat_out_in(data,min,max,electrode_names,time) {
     var dom = document.getElementById("out_in_heat");
     var myChart = echarts.init(dom);
 
     var option = {
         tooltip: {
-            position: 'top'
+            position: 'top',
+            formatter: function(params){
+                return electrode_names[params.data[1]]+"<br>"+params.name+" : "+params.data[2];
+            }
         },
         animation: false,
         grid: {
-            height: '50%',
-            y: '10%'
+            height: 'auto',
+            y: '2%'
         },
         xAxis: {
             type: 'category',
@@ -933,6 +938,9 @@ function heat_out_in(data,min,max,electrode_names,time,type) {
             data: electrode_names,
             splitArea: {
                 show: true
+            },
+            axisLabel:{
+                interval:0
             }
         },
         visualMap: {
@@ -944,12 +952,11 @@ function heat_out_in(data,min,max,electrode_names,time,type) {
             bottom: '50%'
         },
         series: [{
-            name: type,
             type: 'heatmap',
             data: data,
             label: {
                 normal: {
-                    show: false
+                    show: false  // 设置每个item上是否显示值
                 }
             },
             itemStyle: {
