@@ -103,8 +103,13 @@ function showCoordinate(files) {
                 one_elect.add(two_e[0]);
                 one_elect.add(two_e[1]);
             }
-            var co_data={"ez":[],"pz":[],"niz":[]};
-            var relArr = this.result.split("\r\n");
+            var co_data={"ez":[],"pz":[],"niz":[], "unknown":[]};
+            var relArr = null;
+            if (this.result.includes("\r\n")){
+                relArr= this.result.split("\r\n"); // windows 是 回车换行
+            }else{
+                relArr= this.result.split("\n"); // linux 和 mac 是换行
+            }
             //var regp = new RegExp(".*,\".*,.*\"$");
             var regp = /[^\w\s,.-]/;
             if (!$.isEmptyObject(relArr) && relArr.length > 1) {
@@ -112,29 +117,43 @@ function showCoordinate(files) {
                     //delete one_elect_co.cokey; 清空字典，只能使用下面的方法
                     delete one_elect_co[cokey];
                 }
-                var title_key = relArr[0].split(",");
+                // var title_key = relArr[0].split(" ");
                 for (var key = 1, len = relArr.length; key < len; key++) {
                     var values = relArr[key];
                     if (regp.test(values)) {
-                        alert("文件内容中含有非法符号，请修改后再上传！含有非法符号的内容为：" + values);
+                        alert("文件中此行内容含有非法符号，请修改后再上传！\n" + values);
                         return;
                     }
                     if (!$.isEmptyObject(values)) {
-                        var obj = [];
-                        var objArr = values.split(",");
+                        var objArr = null;  // electrode x y z type (type可以为空)
+                        if (values.includes(",")) {
+                            objArr = values.split(",");
+                        }else{
+                            objArr = values.split(" ");
+                        }
+                        /*
                         for (var j=1;j<objArr.length;j++){
                             obj.push(objArr[j].replace(/\s/ig,'')); //过滤空白字符
                         }
-                        if (objArr[0] === "ez"){
-                            co_data.ez.push(obj);
-                        } else if (objArr[0] === "pz"){
-                            co_data.pz.push(obj);
-                        }else if (objArr[0] === "niz"){
-                            co_data.niz.push(obj);
+                        */
+                        if (objArr.length >= 5){
+                            if (objArr[4] === "ez"){
+                                co_data.ez.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                            } else if (objArr[4] === "pz"){
+                                co_data.pz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                            }else if (objArr[4] === "niz"){
+                                co_data.niz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                            } else{
+                                co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                            }
+                        }else if(objArr.length == 4){
+                            co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                        }else{
+                            alert("文件中此行内容信息不全，请补全后再上传！\n" + values);
+                            return;
                         }
-
-                        if (isInSet(obj[3],one_elect)){
-                            one_elect_co[obj[3]] = strArr2floatArr(obj.slice(0,-1));
+                        if (isInSet(objArr[0],one_elect)){
+                            one_elect_co[objArr[0]] = [parseFloat(objArr[1]),parseFloat(objArr[2]),parseFloat(objArr[3])];
                         }
                     }
                 }
@@ -142,6 +161,7 @@ function showCoordinate(files) {
             $("#codination").remove();
             var newM = $("<div id='codination' style='width: 85%;height:500px;' align='center'></div>");
             newM.appendTo($("#electrodes"));
+            // console.log(co_data);
             scatter3D(co_data,'codination');
             /*
             var s1 = $("#s1").val();

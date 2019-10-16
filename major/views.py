@@ -95,7 +95,7 @@ def fcAnalyse(request):
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start) / step)  # 筛选的起始时间下标
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
-            if not (select_s == old_select_s and select_l == old_select_l):  # 只有两者都不相等的情况下才重新计算
+            if not (select_s == old_select_s and select_l == old_select_l):  # 两者有一个不相等就重新计算
                 old_select_s = select_s
                 old_select_l = select_l
                 all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)

@@ -75,7 +75,7 @@ function scatter3D(co_data,name) {
             top: -50
         },
         legend: {
-            data:['EZ','PZ',"NIZ"]
+            data:['EZ','PZ',"NIZ","UNKNOWN"]
         },
         dataset:{
 
@@ -153,6 +153,28 @@ function scatter3D(co_data,name) {
                 color: "blue"
             }
         },
+        {
+            type: 'scatter3D',
+            name:"UNKNOWN",
+            dimensions: ['x', 'y', 'z','electrode'],//显示框信息
+            data: co_data.unknown,
+            symbolSize: 4,//点的大小
+            // symbol: 'triangle',
+            itemStyle: {
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.8)'//边框样式
+            },
+            emphasis: {
+                itemStyle: {
+                    color: '#ccc',//高亮,
+                    symbolSize:10
+                }
+            },
+            itemStyle: {
+                //color: "#f00"
+                color: "black"
+            }
+        }
         ],
         backgroundColor: "#fff"
     });
