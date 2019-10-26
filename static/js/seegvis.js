@@ -1,4 +1,20 @@
 // 外部的 js 文件可以使用html中 js 定义的变量、函数等，不同js文件中的函数也可以相互调用！
+var formatNum = (float) => parseFloat(parseFloat(float).toFixed(4));
+function statisticExceptZero(data) {
+    /**
+     * 计算除去0后数组的中值、均值、最大值、最小值及数组长度
+     */
+    let dataExcept0 = [];
+    for(let i = 0; i < data.length; i++){
+        if (data[i] > 0) {
+            dataExcept0.push(data[i])
+        }
+    }
+    if (dataExcept0.length){
+        return [d3.median(dataExcept0),d3.mean(dataExcept0),d3.max(dataExcept0),d3.min(dataExcept0),dataExcept0.length];
+    }
+    return [0,0,0,0,0];
+}
 function operateMarks() {
         if ($("#operate_type").text() == "新增"){
             addMarks($("#add_name").val(),$("#add_start").val(),$("#add_end").val(),$("#add_desc").val());
@@ -66,6 +82,7 @@ function saveMarks() {
         return [mark.childNodes[0].innerText,mark.childNodes[1].innerText,mark.childNodes[2].innerText,mark.childNodes[3].innerText];
     });
     */
+    let marks_list = [['Name','Start','End','Description']];
     for (let i=0;i<all_marks.length; i++){
         marks_list.push([all_marks[i].childNodes[0].innerText,all_marks[i].childNodes[1].innerText,all_marks[i].childNodes[2].innerText,all_marks[i].childNodes[3].innerText])
     }
@@ -414,4 +431,16 @@ function csv2array(data, delimeter) {
     }
 
     return array;
+}
+
+function downloadFCStatistic() {
+    let rows=[];
+    rows.push(["zone","median","mean","max","min","num"]);
+    if (databyType.ez) rows.push(["ez"].concat(databyType.ez));
+    if (databyType.pz) rows.push(["pz"].concat(databyType.pz));
+    if (databyType.niz) rows.push(["niz"].concat(databyType.niz));
+    if (databyType.ez_pz) rows.push(["ez_pz"].concat(databyType.ez_pz));
+    if (databyType.ez_niz) rows.push(["ez_niz"].concat(databyType.ez_niz));
+    if (databyType.pz_niz) rows.push(["pz_niz"].concat(databyType.pz_niz));
+    exportToCsv("FCStatisticResult.csv",rows);
 }

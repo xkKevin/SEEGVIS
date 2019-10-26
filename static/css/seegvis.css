@@ -56,27 +56,14 @@ input.button{
 div.tooltip1 {
     position: absolute;
     text-align: center;
-    width: 90px;
-    height: 22px;
-    padding: 2px;
+    padding: 1px;
     font: 12px sans-serif;
     background: lightsteelblue;
     border: 0;
     border-radius: 8px;
     pointer-events: none;
 }
-div.tooltip2 {
-    position: absolute;
-    text-align: center;
-    width: 96px;
-    height: 68px;
-    padding: 2px;
-    font: 12px sans-serif;
-    background: lightsteelblue;
-    border: 0;
-    border-radius: 8px;
-    pointer-events: none;
-}
+
 #line_tab{
     display: inline-block;
     width: 400px;

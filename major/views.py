@@ -95,10 +95,7 @@ def fcAnalyse(request):
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start) / step)  # 筛选的起始时间下标
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
-            if not (select_s == old_select_s and select_l == old_select_l):  # 两者有一个不相等就重新计算
-                old_select_s = select_s
-                old_select_l = select_l
-                all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)
+            all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "输入格式不正确！\n正确格式应如：1-3,6"})
 
@@ -233,28 +230,49 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l, h2_threshold):
         else:
             if h2[s2, s1, pi] >= h2_threshold:
                 h2_max[select_i] = h2[s2, s1, pi]
-                lag_max[select_i] = lag[s2, s1, pi]
+                lag_max[select_i] = -lag[s2, s1, pi]
 
                 if lag_max[select_i] > 0:
-                    positive.append(h2_max[select_i])
-                elif lag_max[select_i] < 0:
                     negative.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    positive.append(h2_max[select_i])
             else:
                 h2_max[select_i] = 0
                 lag_max[select_i] = 0
 
     sp = sum(positive)
     sn = sum(negative)
-    lpn = len(positive) + len(negative)
-    if lpn == 0:
-        nw_direction = 0
-    else:
-        nw_direction = (len(positive) - len(negative)) / lpn
-    if sp + sn == 0:
-        w_direction = 0
-    else:
+    lp = len(positive)
+    ln = len(negative)
+    lpn = lp + ln
+    nw_direction = w_direction = mean_h2 = median_h2 = max_h2 = min_h2 = \
+        mean_p = median_p = mean_n = median_n = max_p = min_p = max_n = min_n = 0
+
+    if lpn:
+        nw_direction = (lp - ln) / lpn
+        pn = np.r_[positive,negative]
+        mean_h2 = (sp + sn)/lpn
+        median_h2 = np.median(pn)
+        max_h2 = max(pn)
+        min_h2 = min(pn)
+
+    if sp + sn:
         w_direction = (sp - sn) / (sp + sn)
-    return h2_max, lag_max, nw_direction, w_direction
+
+    if lp:
+        mean_p = sp / lp
+        median_p = np.median(positive)
+        max_p = max(positive)
+        min_p = min(positive)
+
+    if ln:
+        mean_n = sn / ln
+        median_n = np.median(negative)
+        max_n = max(negative)
+        min_n = min(negative)
+
+    return [h2_max,lag_max,nw_direction,w_direction], [median_h2,mean_h2,max_h2,min_h2],\
+           [median_p,mean_p,max_p,min_p], [median_n,mean_n,max_n,min_n]#, [lp, ln]
 
 
 def all_h2_max_direction(h2, lag, select_s, select_l, h2_threshold):
@@ -263,7 +281,10 @@ def all_h2_max_direction(h2, lag, select_s, select_l, h2_threshold):
     h2_lag_direction.clear()
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold))
+            # result = h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold)
+            # [nw_direction,w_direction,[median_h2,mean_h2,max_h2,min_h2]]
+            # h2_lag_direction.append([result[0][1], result[0][2], result[1]])
+            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold)[0])
 
 
 def out_in(h2, lag, select_s, select_l, h2_threshold, select_ei):

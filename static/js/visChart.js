@@ -33,7 +33,13 @@ function scatter3D(co_data,name) {
              y:"bottom",
              x:"center"
         },
-        tooltip: {},
+        tooltip: {
+             // {a}（系列名称），{b}（数据名称），{c}（数值数组）
+             formatter: function (params) {
+                 return "<div style='font-size: larger;'>"+params.seriesName+"</div>" +  // params.value[3]+" : "+
+                     "x : "+params.value[0]+"<br>"+"y : "+params.value[1]+"<br>"+"z : "+params.value[2];
+             }
+        },
         xAxis3D: {
             name: "x",
             type: 'value',
@@ -180,11 +186,11 @@ function scatter3D(co_data,name) {
     });
 }
 
-function linechart(data,signal,lens,nwd,wd,twoElectCo) {
+function linechart(data,signal,lens,nwd,wd,twoElectCo,statistic) {
 
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 100, bottom: 30, left: 50},
-        width = 700 - margin.left - margin.right,
+        width = 800 - margin.left - margin.right,
         height = 400 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
@@ -230,6 +236,16 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
     svg.append("g")
         .call(d3.axisLeft(y));
 
+    var dataFilter_lag = data.map(function(d){return Math.abs(d.lag) });
+    var y_lag = d3.scaleLinear()
+        .domain([0, d3.max(dataFilter_lag)])
+        //.range([height, 0]);
+        .range([3, 16]);
+    /*
+    svg.append("g")
+        .attr("transform", "translate("+width+",0)")
+        .call(d3.axisRight(y_lag));
+    */
     // Initialize line with group a
     var line = svg
         .append('g')
@@ -250,10 +266,18 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
         })
         .style("stroke-width", 3)
         .style("fill", "none");
+
     svg.selectAll("dot")
         .data(data)
         .enter().append("circle")
-        .attr("r", 3)
+        .attr("r", function (d) {
+            return y_lag(Math.abs(d.lag));
+        })
+        .attr("fill", function (d) {
+            if (d.lag > 0) return "red";
+            if (d.lag == 0) return "black";
+            if (d.lag < 0) return "green";
+        })
         .attr("cx", function (d) {
             return x(d.time);
         })
@@ -261,10 +285,72 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
             return y(d.h2);
         })
         .on("mouseover", function (d) {
+            div1.transition()
+                .duration(200)
+                .style("opacity", .9);
+            div1.html(d.time+"<br/>h2 : "+formatNum(d.h2)+"<br/>lag : "+d.lag)
+                .style("left", (d3.event.pageX - 45) + "px")
+                .style("top", (d3.event.pageY - 53) + "px");
+        })
+        .on("mouseout", function (d) {
+            div1.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+    /*
+    var line_zero = svg
+        .append('g')
+        .append("path")
+        .datum(data)
+        .attr("d", d3.line()
+            .x(function (d) {
+                //alert(d.time)
+                return x(d.time)
+            })
+            .y(y_lag(0))
+        )
+        .attr("stroke", function (d) {
+            //return myColor(signal[0])
+            return "grey"
+        })
+        .style("stroke-width", 1)
+        .style("fill", "none");
+
+    var line_lag = svg
+        .append('g')
+        .append("path")
+        .datum(data)
+        .attr("d", d3.line()
+            .x(function (d) {
+                //alert(d.time)
+                return x(d.time)
+            })
+            .y(function (d) {
+                return y_lag(d.lag)
+            })
+        )
+        .attr("stroke", function (d) {
+            //return myColor(signal[0])
+            return "blue"
+        })
+        .style("stroke-width", 3)
+        .style("fill", "none");
+
+    svg.selectAll("rect")
+        .data(data)
+        .enter().append("circle")
+        .attr("r", 3)
+        .attr("cx", function (d) {
+            return x(d.time);
+        })
+        .attr("cy", function (d) {
+            return y_lag(d.lag);
+        })
+        .on("mouseover", function (d) {
             div.transition()
                 .duration(200)
                 .style("opacity", .9);
-            div.html(d.time+' : '+d.h2.toFixed(4))
+            div.html(d.time+' : '+d.lag.toFixed(4))
                 .style("left", (d3.event.pageX - 45) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
         })
@@ -273,13 +359,15 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
                 .duration(500)
                 .style("opacity", 0);
         });
+    */
+
     dataviz.select("table").remove();
     var table = dataviz.append("table");
     table.attr("id", "line_tab");
     table.attr("class", "table tab1 table-bordered");
     table.append("caption").text(signal[0]+" -- "+signal[1]);
-    var table_data = [["加权方向性",wd],["非加权方向性",nwd],["中值",d3.median(dataFilter)],["均值",d3.mean(dataFilter)],["最大值",d3.max(dataFilter)],["最小值",d3.min(dataFilter)],
-    [signal[0]+" 空间坐标",twoElectCo[0]],[signal[1]+" 空间坐标",twoElectCo[1]],["空间几何距离",distance(twoElectCo[0],twoElectCo[1])]];
+    var table_data = [["加权方向性",wd],["非加权方向性",nwd],["中值（总、正、负）",statistic.median],["均值（总、正、负）",statistic.mean],["最大值（总、正、负）",statistic.max],
+    ["最小值（总、正、负）",statistic.min],[signal[0]+" 空间坐标",twoElectCo[0]],[signal[1]+" 空间坐标",twoElectCo[1]],["空间几何距离",distance(twoElectCo[0],twoElectCo[1])]];
     var my_tr = table.append("tbody")
         .selectAll("mytr")
         .data(table_data)
@@ -293,9 +381,9 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo) {
     var td2 = my_tr.append("td")
         .text(function (d) {
             if(typeof(d[1]) === "number"){
-                return d[1].toFixed(4);
+                return formatNum(d[1]);
             }else if(d[1]){
-                return [d[1][0].toFixed(4),d[1][1].toFixed(4),d[1][2].toFixed(4)];
+                return [formatNum(d[1][0]),formatNum(d[1][1]),formatNum(d[1][2])];
             }else{
                 return "坐标未定义！";
             }
@@ -406,7 +494,7 @@ function violinBwt() {
         .range(d3.schemeSet2);
       var count=0;
       // Add the shape to this svg!
-        var datebyType={};
+      databyType = {};
       svg.selectAll("myViolin")
         .data(sumstat)
         .enter()        // So now we are working group per group
@@ -418,7 +506,7 @@ function violinBwt() {
                       pdata.push(d.value[i][j]);
                   }
               }
-              datebyType[d.key] = pdata;
+              databyType[d.key] = statisticExceptZero(pdata);
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
           .on("mouseover", function (d) {
@@ -426,10 +514,11 @@ function violinBwt() {
             div2.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div2.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
-                "<br>均值："+Math.round(d3.mean(datebyType[d.key])*10000)/10000+
-                "<br>最大值："+Math.round(d3.max(datebyType[d.key])*10000)/10000+
-                "<br>最小值："+Math.round(d3.min(datebyType[d.key])*10000)/10000)
+            div2.html("中值："+formatNum(databyType[d.key][0])+
+                "<br>均值："+formatNum(databyType[d.key][1])+
+                "<br>最大值："+formatNum(databyType[d.key][2])+
+                "<br>最小值："+formatNum(databyType[d.key][3])+
+                "<br>点数量："+formatNum(databyType[d.key][4]))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
         })
@@ -449,7 +538,7 @@ function violinBwt() {
                 .y(function(d){ return(y((d.x0+d.x1)/2)) } )
                 .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
             );
-
+    //console.log(databyType);
       // Add individual points with jitter
       var jitterWidth = 40;
       svg
@@ -464,15 +553,15 @@ function violinBwt() {
           .attr("stroke", "white")
           .on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div.transition()
+            div3.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html(d3.median(d.h2.slice(1,-1).split(",")).toFixed(4))
+            div3.html(formatNum(d3.median(d.h2.slice(1,-1).split(","))))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
           .on("mouseout", function (d) {
-            div.transition()
+            div3.transition()
                 .duration(500)
                 .style("opacity", 0);
             })
@@ -654,15 +743,15 @@ function directionality(data,type) {
           .style("fill", function(d){ return(myColor(d[type]))})
           .attr("stroke", "white")
           .on("mouseover", function (d) {
-            div.transition()
+            div3.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html(parseFloat(d[type]).toFixed(4))
+            div3.html(formatNum(d[type]))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
           .on("mouseout", function (d) {
-            div.transition()
+            div3.transition()
                 .duration(500)
                 .style("opacity", 0);
             });
@@ -760,10 +849,10 @@ function subviolinFC(data,zone,electrodes) {
             div2.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div2.html("中值："+Math.round(d3.median(dataFilter)*10000)/10000+
-                "<br>均值："+Math.round(d3.mean(dataFilter)*10000)/10000+
-                "<br>最大值："+Math.round(d3.max(dataFilter)*10000)/10000+
-                "<br>最小值："+Math.round(d3.min(dataFilter)*10000)/10000)
+            div2.html("中值："+formatNum(d3.median(dataFilter))+
+                "<br>均值："+formatNum(d3.mean(dataFilter))+
+                "<br>最大值："+formatNum(d3.max(dataFilter))+
+                "<br>最小值："+formatNum(d3.min(dataFilter)))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
         })
@@ -804,15 +893,16 @@ function subviolinFC(data,zone,electrodes) {
           .style("fill", function(d){ return(myColor(d.h2))})
           .attr("stroke", "white")
           .on("mouseover", function (d) {
-            div.transition()
+            div3.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div.html(parseFloat(d.h2).toFixed(4))
+            // div.html(parseFloat(d.h2).toFixed(4))
+            div3.html(formatNum(d.h2))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
           .on("mouseout", function (d) {
-            div.transition()
+            div3.transition()
                 .duration(500)
                 .style("opacity", 0);
             });
