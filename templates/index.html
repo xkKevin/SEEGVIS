@@ -270,7 +270,8 @@
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
                             <td style="padding-left: 10px;">
-                                <label class="btn btn-success" onclick="violin_play()"><i class="glyphicon glyphicon-play-circle"></i>&nbsp;播放</label>
+                                <label class="btn btn-success" onclick="violin_play()">播放</label>
+                                <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
                             </td>
                             <td >
                                 <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_result.csv">下载FC计算结果</a>
@@ -282,6 +283,11 @@
                         </tbody>
                     </table>
                     <!-- Create a div where the graph will take place -->
+                    <div id="violinTimeDiv" style="margin-left: 360px;display: none;">
+                        <label id="lastTime" onclick="last_time()" class="btn-sm btn-default ctlTime">上一时刻</label>
+                        &nbsp;当前时间为：<span id="violinTimeSpan" style="color:red;"></span>&nbsp;
+                        <label id="nextTime" onclick="fc_play()" class="btn-sm btn-default ctlTime">下一时刻</label>
+                    </div>
                     <div id="violinBwt">
                         <div id="violinLeft" style="width:1000px;float:left; text-align: center;margin-left: 10px;"></div>
                         <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
@@ -557,23 +563,36 @@
     });
 }
 var databyType={};
-    function fcAnalyse(){
+var ez,pz,niz;
+var play_i = showTimeInterval = null;
+function fcAnalyse(){
     if (!init){
         alert("请先上传.mat数据文件!");
         return;
     }
-    var ez = $("#EZ").val();
-    var pz = $("#PZ").val();
-    var niz = $("#NIZ").val();
+    ez = $("#EZ").val();
+    pz = $("#PZ").val();
+    niz = $("#NIZ").val();
     if (!(ez || pz || niz)){
         alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
         return;
     }
+
+    $(".ctlTime").css("visibility","hidden");
+    $("#play_pause").text("暂停");
+    if (showTimeInterval) {
+        clearInterval(showTimeInterval);
+    }
+
     var fc_result = document.getElementById("fc_result");
     fc_result.style.display = "none";
     var fc_result_s = document.getElementById("fc_result_s");
     fc_result_s.style.display = "none";
     // alert(ez+"\n"+pz+"\n"+niz)
+    let violinTimeDiv = $("#violinTimeDiv");
+    //violinTimeDiv.style.display = "none";
+    let violinTimeSpan = $("#violinTimeSpan");
+
     $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
         function(result, statue){
             if(result["result"] === true){
@@ -581,6 +600,8 @@ var databyType={};
                 // var zones = result["zones"];
                 fc_result.style.display = "inline";
                 fc_result_s.style.display = "inline";
+                violinTimeDiv.css("display","inline");
+                violinTimeSpan.text(select_start + " -- " + select_end);
                 violinBwt();
             }else {
                 alert(result["msg"])
@@ -656,12 +677,92 @@ var databyType={};
             }
     });
 }
-    function violin_play() {
-        for (let play_i=select_start, ti = 0;play_i<=fc_info.end;play_i+=fc_info.step, ti++){
-            window.setTimeout(function() {
-                console.log(play_i);
-            },1200*ti);
-        }
+
+function violin_play() {
+    if (!init){
+        alert("请先上传.mat数据文件!");
+        return;
     }
+    ez = $("#EZ").val();
+    pz = $("#PZ").val();
+    niz = $("#NIZ").val();
+    if (!(ez || pz || niz)){
+        alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+        return;
+    }
+    $(".ctlTime").css("visibility","visible");
+    $("#play_pause").text("暂停");
+    /*
+    for (let play_i=select_start, ti = 0;play_i<=fc_info.end;play_i+=fc_info.step, ti++){
+        window.setTimeout(function() {
+            console.log(play_i);
+            fc_play(play_i);
+        },1200*ti);
+    }
+    */
+    play_i = select_start;
+    if (showTimeInterval) {
+        clearInterval(showTimeInterval);
+    }
+    showTimeInterval=setInterval(fc_play,1200);
+}
+function violin_pause(obj) {
+    let type = $(obj).text();
+    //console.log(type);
+    if (type == "暂停"){
+        clearInterval(showTimeInterval);
+        $(obj).text("继续");
+    }else {
+        showTimeInterval=setInterval(fc_play,1200);
+        $(obj).text("暂停");
+    }
+}
+function last_time() {
+    if (play_i == select_start){
+        play_i = select_end - fc_info.step;
+
+    } else if(play_i - fc_info.step == select_start){
+        play_i = select_end;
+    } else {
+        play_i -= fc_info.step * 2;
+    }
+    fc_play();
+}
+/*
+function next_time() {
+    fc_play();
+}
+*/
+function fc_play() {
+    //console.log(play_i);
+    var fc_result = document.getElementById("fc_result");
+    fc_result.style.display = "none";
+    var fc_result_s = document.getElementById("fc_result_s");
+    fc_result_s.style.display = "none";
+    // alert(ez+"\n"+pz+"\n"+niz)
+    let violinTimeDiv = $("#violinTimeDiv");
+    let violinTimeSpan = $("#violinTimeSpan");
+
+    $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":play_i,"select_end":play_i,"h2_threshold":h2_threshold},
+        function(result, statue){
+            if(result["result"] === true){
+                //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
+                // var zones = result["zones"];
+                violinTimeDiv.css("display","inline");
+                violinTimeSpan.text(play_i);
+
+                if (play_i == select_end){
+                    play_i = select_start;
+                } else{
+                    play_i += fc_info.step;
+                }
+                fc_result.style.display = "inline";
+                fc_result_s.style.display = "inline";
+                violinBwt();
+            }else {
+                alert(result["msg"])
+            }
+    });
+}
 </script>
 </html>
