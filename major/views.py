@@ -87,26 +87,30 @@ def fcAnalyse(request):
     if request.method == "POST":
         try:
             global matData, start, step, old_select_s, old_select_l
-            ez = to_lists(request.POST.get('ez'))
-            pz = to_lists(request.POST.get('pz'))
-            niz = to_lists(request.POST.get('niz'))
+            ez = json.loads(request.POST.get('ez'))
+            pz = json.loads(request.POST.get('pz'))
+            niz = json.loads(request.POST.get('niz'))
+
+            elec_len = len(electrode_names)
+            '''
+            # 判断是否越界 （空数组为false）
+            if (ez and ez[-1] >= elec_len):
+                return JsonResponse({'result': False, 'msg': "EZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
+            if (pz and pz[-1] >= elec_len):
+                return JsonResponse({'result': False, 'msg': "PZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
+            if (niz and niz[-1] >= elec_len):
+                return JsonResponse({'result': False, 'msg': "NIZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
+            '''
+
             h2_threshold = float(request.POST.get('h2_threshold'))
             select_start = float(request.POST.get('select_start'))
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start) / step)  # 筛选的起始时间下标
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
             all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)
-        except Exception as e:
-            return JsonResponse({'result': False, 'msg': "输入格式不正确！\n正确格式应如：1-3,6"})
 
-        # 判断是否越界 （空数组为false）
-        elec_len = len(electrode_names)
-        if (ez and ez[-1]>=elec_len):
-            return JsonResponse({'result': False, 'msg': "EZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
-        if (pz and pz[-1]>=elec_len):
-            return JsonResponse({'result': False, 'msg': "PZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
-        if (niz and niz[-1]>=elec_len):
-            return JsonResponse({'result': False, 'msg': "NIZ存在错误电极（数字越界）！\n数字范围应为：0至"+str(elec_len-1)})
+        except Exception as e:
+            return JsonResponse({'result': False, 'msg': "参数有误，无法分析！"})
 
         fileHeader = ["zone", "electrodes", "h2", "lag", "nwd", "wd"]
         ez_in = cal_fc_in(ez,elec_len,"ez")
@@ -132,7 +136,7 @@ def fcAnalyse(request):
         for i in pz_niz:
             writer.writerow(i)
         fc_analyse.close()
-        return JsonResponse({'result': True, 'zones': [ez,pz,niz]})
+        return JsonResponse({'result': True})   # 'zones': [ez,pz,niz]
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 
 

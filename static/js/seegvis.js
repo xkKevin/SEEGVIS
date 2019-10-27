@@ -444,3 +444,45 @@ function downloadFCStatistic() {
     if (databyType.pz_niz) rows.push(["pz_niz"].concat(databyType.pz_niz));
     exportToCsv("FCStatisticResult.csv",rows);
 }
+
+function downloadOUTStatistic() {
+    let rows=[["","",type_note,"",""],["TIME","EZ","PZ","NIZ","UNKNOWN"]];
+    exportToCsv("OUTStatisticResult.csv",rows.concat(download_zone_data));
+}
+
+function to_list(str_num) {
+     /*
+    :param str_num: 字符串："4-8,10,15-17"
+    :return: 整数列表：[4, 5, 6, 7, 8, 10, 15, 16, 17]
+    */
+    str_num = str_num.replace(/\s*/g,"");  // 去除字符串所有空格
+    if (!str_num){  // 为空
+        return [];
+    }
+    let re = /^\d+(-\d+)?(,\d+(-\d+)?)*$/;
+    if (!re.test(str_num)) {
+        // "格式不正确！\n正确格式应如：1-3,6"
+        return "区域输入格式有误！正确格式应如：1-3,6";
+    }
+    result = [];
+    for (let i of str_num.split(",")){
+        let tmp = i.split("-");
+        if (tmp.length == 2){  // dd3.range("2","6","2")  ==> [2,4]  d3.range 可接收字符串
+            result = result.concat(d3.range(tmp[0], parseInt(tmp[1]) + 1));
+        }else{
+            result.push(parseInt(tmp[0]))
+        }
+    }
+    return distinct_sort(result);  // 列表去重，并且从小到大排序
+}
+
+function distinct_sort(arr) {
+    let i,obj = {},result = [];
+    for(i = 0; i< arr.length; i++){
+        if(!obj[arr[i]]){ //如果能查找到，证明数组元素重复了
+            obj[arr[i]] = 1;
+            result.push(arr[i]);
+        }
+    }
+    return result.sort((a,b)=>a-b);
+}

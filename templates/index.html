@@ -49,8 +49,8 @@
                 <div style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 15px;margin-top: 10px;">
                     当前上传的数据文件为：<font color="red">{{ file_name }}</font>
                 </div>
-                <div style="display: inline-block;width: 62%;">
-                    <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 95%">
+                <div style="display: inline-block;width: 50%;">
+                    <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 96%">
                         <tbody>
                         {% for key,value in fc_info.items %}
                             <tr class="active">
@@ -69,9 +69,9 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="display: inline-block; width: 35%; vertical-align: top;">
-                    <h3 style="margin-top: 6px;">控制面板&nbsp;(DashBoard)</h3>
-                    <div style="margin-top: 30px;">
+                <div style="display: inline-block; width: 48%; vertical-align: top; margin-left: 10px;">
+                    <h3 style="margin-top: 0">控制面板&nbsp;(DashBoard)</h3>
+                    <div style="margin-top: 25px;">
                         <b>筛选通道：</b>
                         <select id="select_channels" class="selectpicker" multiple data-live-search="true" data-actions-box="true">
                             {% for electrode in fc_info.electrode_names %}
@@ -80,16 +80,16 @@
                         </select>
                         &nbsp;&nbsp;&nbsp;当前共选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
                     </div>
-                    <div style="margin-top: 35px;">
+                    <div style="margin-top: 25px;">
                         <b>筛选时间：{{ fc_info.start }}</b>&nbsp;&nbsp;&nbsp;&nbsp;
                         <input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;
                         {{ fc_info.end }}</b>
                     </div>
-                    <div style="margin-top: 30px;">
+                    <div style="margin-top: 25px;">
                         <b>设置阈值：</b>
                         <input id="h2_threshold" type="text" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
                     </div>
-                    <div style="margin-top: 30px;">
+                    <div style="margin-top: 25px;">
                         <b>筛选子波：</b>
                         <select id="select_wave" class="selectpicker">
                             <option>Any Wave</option>
@@ -104,8 +104,30 @@
                         </select>
                         &nbsp;&nbsp;<span style="color:red;">筛选子波功能暂未实现！</span>
                     </div>
-                    <div style="margin-top:20px;">
-                    &nbsp;&nbsp;<button class="btn btn-default" onclick="select_confirm()">确认选择</button>&nbsp;
+                    <div style="margin-top: 25px;">
+                        <div style="display: inline-block;vertical-align: top; margin-top: 8px;"><b>确定区域：</b></div>
+                        <label style="width:200px;">
+                            <div class="input-group">
+                                <span class="input-group-addon">EZ</span>
+                                <input class="form-control" type="text" id="EZ">
+                            </div>
+                        </label>
+                        <label style="width:200px;">
+                            <div class="input-group">
+                                <span class="input-group-addon">PZ</span>
+                                <input class="form-control" type="text" id="PZ">
+                            </div>
+                        </label>
+                        <label style="width:200px;">
+                            <div class="input-group">
+                                <span class="input-group-addon">NIZ</span>
+                                <input class="form-control" type="text" id="NIZ">
+                            </div>
+                        </label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <button class="btn btn-default" onclick="assignZone()">参考坐标</button>&nbsp;
+                        <button class="btn btn-success" onclick="select_confirm()">确认选择</button>&nbsp;
                         <button class="btn btn-warning" onclick="select_reset()">恢复默认</button>&nbsp;&nbsp;
                         <div id="select_confirm" style="display:inline-block;font-size: larger; text-align: left;"></div>
                     </div>
@@ -242,9 +264,10 @@
         <div id="collapseFour" class="panel-collapse collapse">
             <div class="panel-body">
                 <div id="analyse">
-                    <table>
+                    <table style="margin-bottom: 15px;" align="center">
                         <tbody>
                         <tr>
+                            <!--
                             <td style="margin-left: 10px">
                                 <label class="btn btn-primary" onclick="assignZone()">参考空间坐标</label>
                             </td>
@@ -266,29 +289,32 @@
                                     <input class="form-control" type="text" id="NIZ">
                                 </div>
                             </td>
+                            -->
                             <td>
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
                             <td style="padding-left: 10px;">
                                 <label class="btn btn-success" onclick="violin_play()">播放</label>
+                            </td>
+                            <td style="padding-left: 10px;">
                                 <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
                             </td>
                             <td >
-                                <a id="fc_result" style="margin-left: 15px;display: none;" href="/static/data/fc_result.csv">下载FC计算结果</a>
+                                <a id="fc_result" style="margin-left: 15px;visibility: hidden;: none;" href="/static/data/fc_result.csv">下载FC计算结果</a>
                             </td>
                              <td >
-                                <a id="fc_result_s" style="margin-left: 15px;display: none;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
+                                <a id="fc_result_s" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
                             </td>
                         </tr>
                         </tbody>
                     </table>
                     <!-- Create a div where the graph will take place -->
                     <div id="violinTimeDiv" style="margin-left: 360px;display: none;">
-                        <label id="lastTime" onclick="last_time()" class="btn-sm btn-default ctlTime">上一时刻</label>
+                        <label id="lastTime" onclick="last_time()" class="btn-sm btn-default ctlTime" style="visibility: hidden;">上一时刻</label>
                         &nbsp;当前时间为：<span id="violinTimeSpan" style="color:red;"></span>&nbsp;
                         <label id="nextTime" onclick="fc_play()" class="btn-sm btn-default ctlTime">下一时刻</label>
                     </div>
-                    <div id="violinBwt">
+                    <div id="violinBwt" style="margin-top: -15px;">
                         <div id="violinLeft" style="width:1000px;float:left; text-align: center;margin-left: 10px;"></div>
                         <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
                     </div>
@@ -308,7 +334,8 @@
                 <span id="out_links"></span><br>
                 IN LINKS:<br>
                 <span id="in_links"></span><br>
-                <a href="/static/data/out_result.xls">点击下载OUT分析结果</a>
+                <a href="/static/data/out_result.xls">下载&nbsp;OUT&nbsp;分析结果</a>
+                <a id="out_result_s" style="margin-left: 20px;visibility: hidden;cursor: pointer;" onclick="downloadOUTStatistic()">下载区域统计结果</a>
             </div>
             <div class="panel-body">
                 <table align="center">
@@ -323,6 +350,16 @@
                         <button class="btn btn-default" onclick="outAnalyse(this,'OUT/IN')">OUT / IN</button>
                         <button class="btn btn-default" onclick="outAnalyse(this,'OUT-IN')">OUT - IN</button>
                         <button class="btn btn-default" onclick="outAnalyse(this,'IN')">IN</button>
+                    </td>
+                    <td style="padding-left: 15px;">
+                        <select id="zone_analyse_type" class="selectpicker" data-width="auto">
+                            <option>median</option>
+                            <option>mean</option>
+                            <option>sum</option>
+                            <option>max</option>
+                            <option>min</option>
+                        </select>
+                        <button class="btn btn-warning" onclick="outZoneAnalyse()">区域分析</button>
                     </td>
                 </table>
                 <div id="out_chart" style="display: none; margin-top: 15px;">
@@ -348,9 +385,14 @@
     }
     var one_elect = new Set(); //电极点名字
     var one_elect_co = {};
-    var ez_p=[];
+    var ez_p=[];  // 存储的是属于ez的电极对的下标，如ez_p=[1,3]; 则说明electrode_names中下标为1,3的电极对属于ez（此信息来自坐标文件）
     var pz_p=[];
     var niz_p=[];
+    var ez_u = [], pz_u = [], niz_u = []; // 与ez_p一样，但此信息来自用户自定义
+
+    var databyType={};
+    var ez = $("#EZ"), pz = $("#PZ"), niz = $("#NIZ");  // zone 电极输入
+    var play_i = showTimeInterval = null;  // 小提琴图的播放
 
     var div1 = d3.select("body").append("div")  // 折线图的tooltip
     .attr("class", "tooltip1")  // bootstrap 有自己的tootlip，所以命名需为tooltip1，防止冲突
@@ -381,7 +423,9 @@
     var select_channels = $('#select_channels');
     var select_ei = [];  // 选择电极（通道）的下标数组
     var select_wave = $("#select_wave");
+    var elen = 0; // 电极的个数
     if (init){
+        elen = fc_info["electrode_names"].length;
         time_slider = new Slider('#time_slider', {
             min: fc_info.start,
             max: fc_info.end,
@@ -440,8 +484,9 @@
     function select_confirm() {
         let threshold = $("#h2_threshold").val();
         var reg = /^0(\.[0-9]*)?$/;   // 匹配 [0,1) 的小数，包括 "0."
+        let select_text = $("#select_confirm");
         if (!reg.test(threshold)){
-            $("#select_confirm").css("color","deeppink").text("阈值输入有误");
+            select_text.css("color","deeppink").text("阈值输入有误");
         } else{
             h2_threshold = parseFloat(threshold);
             select_start = time_slider.getValue()[0];
@@ -456,12 +501,54 @@
             h2_threshold_slider.setValue(h2_threshold);
             $("#h2_threshold_value").text(h2_threshold);
 
-            $("#select_confirm").css("color","green").text("设置成功");
+            // let ez_val = ez.val(), pz_val = pz.val(),niz_val = niz.val();
+            ez_u = to_list(ez.val());
+            pz_u = to_list(pz.val());
+            niz_u = to_list(niz.val());
+
+            let zone_flag = true;
+
+            if (typeof(ez_u) === "string"){
+                select_text.css("color","darkred").text("提示：EZ" + ez_u);
+                ez_u = [];
+                zone_flag = false;
+            } else{
+                if (ez_u.length && ez_u[ez_u.length-1] > elen){
+                    select_text.css("color","darkred").text("提示：EZ数字越界！数字范围应为：0至" +  elen);
+                    ez_u = [];
+                    zone_flag = false;
+                }
+            }
+            if (typeof(pz_u) === "string"){
+                select_text.css("color","darkred").text("提示：PZ" + pz_u);
+                pz_u = [];
+                zone_flag = false;
+            }else{
+                if (pz_u.length && pz_u[pz_u.length-1] > elen){
+                    select_text.css("color","darkred").text("提示：PZ数字越界！数字范围应为：0至" +  elen);
+                    pz_u = [];
+                    zone_flag = false;
+                }
+            }
+            if (typeof(niz_u) === "string"){
+                select_text.css("color","darkred").text("提示：NIZ" + niz_u);
+                niz_u = [];
+                zone_flag = false;
+            }else{
+                if (niz_u.length && niz_u[niz_u.length-1] > elen){
+                    select_text.css("color","darkred").text("提示：NIZ数字越界！数字范围应为：0至" +  elen);
+                    niz_u = [];
+                    zone_flag = false;
+                }
+            }
+            if (zone_flag) {
+                select_text.css("color","green").text("设置成功！");
+            }
         }
-        $("#select_confirm").css("visibility","visible");
+        select_text.css("visibility","visible");
         window.setTimeout(function() {
             $("#select_confirm").css("visibility","hidden");
-        },2000)
+        },3000)
         /*
         $("#select_confirm").fadeIn();
         $("#select_confirm").fadeOut();
@@ -480,11 +567,16 @@
         select_channels.selectpicker('selectAll');
         $("#electrodes_num").text(select_channels.val().length);
         $("#h2_threshold").val(0);
-
+        ez.val("");
+        pz.val("");
+        niz.val("");
+        ez_u = [];
+        pz_u = [];
+        niz_u = [];
         $("#select_confirm").css("color","green").css("visibility","visible").text("恢复成功");
         window.setTimeout(function() {
             $("#select_confirm").css("visibility","hidden");
-        },2000)
+        },3000)
     }
     var mark_select = null;
     // var marks_list = [['Name','Start','End','Description']];
@@ -522,7 +614,7 @@
         $(this).parent().parent().remove();
     });
     // 之所以以下文件不放进单独的js文件中，是因为引用了Django模板
-    function getH2() {
+function getH2() {
     if(!fc_info){
         alert("请先上传.mat数据文件!");
         return;
@@ -534,7 +626,7 @@
         alert("请正确输入两电极信号（格式需为非负整数）！");
         return;
     }
-    var elen = fc_info["electrode_names"].length;
+    // var elen = fc_info["electrode_names"].length;
     if(s1>=elen || s2>=elen){
         alert("输入信号应小于"+elen+" !");
         return;
@@ -562,22 +654,21 @@
             }
     });
 }
-var databyType={};
-var ez,pz,niz;
-var play_i = showTimeInterval = null;
+
 function fcAnalyse(){
     if (!init){
         alert("请先上传.mat数据文件!");
         return;
     }
+    /*
     ez = $("#EZ").val();
     pz = $("#PZ").val();
     niz = $("#NIZ").val();
-    if (!(ez || pz || niz)){
-        alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+    */
+    if (!(ez_u.length + pz_u.length + niz_u.length)){
+        alert("您还未在控制面板内确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
         return;
     }
-
     $(".ctlTime").css("visibility","hidden");
     $("#play_pause").text("暂停");
     if (showTimeInterval) {
@@ -585,21 +676,22 @@ function fcAnalyse(){
     }
 
     var fc_result = document.getElementById("fc_result");
-    fc_result.style.display = "none";
+    fc_result.style.visibility = "hidden";
     var fc_result_s = document.getElementById("fc_result_s");
-    fc_result_s.style.display = "none";
+    fc_result_s.style.visibility = "hidden";
     // alert(ez+"\n"+pz+"\n"+niz)
     let violinTimeDiv = $("#violinTimeDiv");
     //violinTimeDiv.style.display = "none";
     let violinTimeSpan = $("#violinTimeSpan");
 
-    $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
+    $.post('{% url 'fcAnalyse' %}',{"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),
+            "select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
         function(result, statue){
             if(result["result"] === true){
                 //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                 // var zones = result["zones"];
-                fc_result.style.display = "inline";
-                fc_result_s.style.display = "inline";
+                fc_result.style.visibility = "visible";
+                fc_result_s.style.visibility = "visible";
                 violinTimeDiv.css("display","inline");
                 violinTimeSpan.text(select_start + " -- " + select_end);
                 violinBwt();
@@ -608,7 +700,13 @@ function fcAnalyse(){
             }
     });
 }
-    function outAnalyse(e, type) {
+
+// var out_links = [], in_links = [];
+var zone_data = [];
+var outAnalyseType;  // 四种分析类型
+var download_zone_data = [];  // ["TIME", "EZ","PZ","NIZ","UNKNOWN"]
+var type_note; // 字符串，说明是何种out分析，及何种统计分析 eg："OUT --- median"
+function outAnalyse(e, type) {
     if(!fc_info){
         alert("请先上传.mat数据文件!");
         return;
@@ -616,6 +714,9 @@ function fcAnalyse(){
     $.get('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold, "select_ei":JSON.stringify(select_ei)},
         function(result, statue){
             if(result["result"] === true) {
+                outAnalyseType = type;
+                $("#out_result_s").css("visibility","hidden");
+
                 let out_links = result["out_links"];
                 let in_links = result["in_links"];
                 $("#out_result").css("display","block");
@@ -628,7 +729,6 @@ function fcAnalyse(){
                 let select_electrode_names = [];
                 let stream_data = [];
                 let heap_data = [];
-                let time = [];
                 let len_t = out_links.length;
                 let len_e = out_links[0].length;
                 let min = 0;
@@ -637,9 +737,17 @@ function fcAnalyse(){
                 for (let j = 0; j < len_e; j++) {  // 初始化所选电极通道名
                     select_electrode_names.push(fc_info.electrode_names[select_ei[j]]);
                 }
+
+                zone_data = [];
+                /*
+                zone_stream_data = [];
+                zone_heap_data = [];
+                zone_data_max = 0; zone_data_min = 0; // 存放以上两个变量的最大值与最小值
+                */
                 for (let i = 0; i < len_t; i++) {  // i 是时间
                     let t = select_start + i * step;
-                    time.push(t);
+                    // let ez_num = 0, pz_num = 0, niz_num = 0, unknow_num = 0;
+                    let ez_num = [], pz_num = [], niz_num = [], unknow_num = [];
                     for (let j = 0; j < len_e; j++) {  // j 是 电极
                         if (type === 'OUT') {
                             value = out_links[i][j];
@@ -653,6 +761,18 @@ function fcAnalyse(){
                         else if (type === 'OUT-IN') {
                             value = out_links[i][j] - in_links[i][j];
                         }
+
+                        // 判断电极在何种用户定义的区域中
+                        if (ez_u.includes(select_ei[j])){
+                            ez_num.push(value);
+                        }else if (pz_u.includes(select_ei[j])){
+                            pz_num.push(value);
+                        }else if (niz_u.includes(select_ei[j])){
+                            niz_num.push(value);
+                        }else{
+                            unknow_num.push(value);
+                        }
+
                         stream_data.push([t, value, select_electrode_names[j]]);
                         heap_data.push([i, len_e - j - 1, value]);
                         if (value > max) {
@@ -661,6 +781,7 @@ function fcAnalyse(){
                             min = value;
                         }
                     }
+                    zone_data.push([ez_num, pz_num, niz_num, unknow_num]);
                 }
                 // console.log(min, max);
                 if (type === 'OUT-IN') {
@@ -669,13 +790,71 @@ function fcAnalyse(){
                     }
                 }
                 // console.log(stream_data);
+                // console.log(heap_data);
                 $("#out_chart").css("display","block");
-                stream_out_in(stream_data,select_electrode_names, [select_start, time[len_t - 1]], step);
-                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), time);
+                stream_out_in(stream_data,select_electrode_names, [select_start, select_end], step);
+                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), d3.range(select_start,select_end+step,step));
             } else{
                 alert("Failed!\n message:"+result["msg"]);
             }
     });
+}
+
+function outZoneAnalyse() { // type种类为：中值、均值、总和  median，mean，sum
+    /*
+    if (!init){
+        alert("请先上传.mat数据文件!");
+        return;
+    }
+    if (!(ez_u.length + pz_u.length + niz_u.length)){
+        alert("您还未在控制面板内确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+        return;
+    }
+    */
+    if (!zone_data.length){
+        alert("请先选择一种OUT分析，之后再进行区域分析！");
+        return;
+    }
+    // [ez_num, pz_num, niz_num, unknow_num]
+    let type = $("#zone_analyse_type").val();
+    let ez_r,pz_r,niz_r,unk_r,min,max;
+    let zone_stream_data = []; // 每个元素为：[时间，值，区域]，如：[100, 18, "EZ"]
+    let zone_heap_data = []; // 每个元素为：[横坐标，纵坐标，值]，如：[1, 3, 20]
+
+    download_zone_data = [];
+    for (let i = 0; i < zone_data.length; i++) {  // i 是时间下标
+        let t = select_start + i * fc_info.step;
+
+        ez_r = zone_data[i][0].length ? d3[type](zone_data[i][0]) : 0;
+        pz_r = zone_data[i][1].length ? d3[type](zone_data[i][1]) : 0;
+        niz_r = zone_data[i][2].length ? d3[type](zone_data[i][2]) : 0;
+        unk_r = zone_data[i][3].length ? d3[type](zone_data[i][3]) : 0;
+
+        zone_stream_data.push([t, ez_r, "EZ"]);
+        zone_stream_data.push([t, pz_r, "PZ"]);
+        zone_stream_data.push([t, niz_r, "NIZ"]);
+        zone_stream_data.push([t, unk_r, "UNKNOWN"]);
+
+        zone_heap_data.push([i, 3, ez_r]);
+        zone_heap_data.push([i, 2, pz_r]);
+        zone_heap_data.push([i, 1, niz_r]);
+        zone_heap_data.push([i, 0, unk_r]);
+
+        download_zone_data.push([t,ez_r,pz_r,niz_r,unk_r]);
+    }
+
+    max = d3.max(zone_heap_data.map( d => d[2]));
+    min = d3.min(zone_heap_data.map( d => d[2]));
+    if (outAnalyseType === 'OUT-IN'){
+        for (let i = 0; i < zone_stream_data.length; i++) {
+            zone_stream_data[i][1] -= min;
+        }
+    }
+    stream_out_in(zone_stream_data,["EZ", "PZ", "NIZ", "UNKNOWN"], [select_start, select_end], fc_info.step);
+    heat_out_in(zone_heap_data, min, max, ["UNKNOWN", "NIZ", "PZ", "EZ"], d3.range(select_start, select_end + fc_info.step, fc_info.step));
+    // console.log(zone_data);
+    type_note = outAnalyseType + " --- " + type;
+    $("#out_result_s").css("visibility","visible").text("下载 "+type_note+" 区域统计结果");
 }
 
 function violin_play() {
@@ -683,11 +862,8 @@ function violin_play() {
         alert("请先上传.mat数据文件!");
         return;
     }
-    ez = $("#EZ").val();
-    pz = $("#PZ").val();
-    niz = $("#NIZ").val();
-    if (!(ez || pz || niz)){
-        alert("您还未输入电极！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+    if (!(ez_u.length + pz_u.length + niz_u.length)){
+        alert("您还未在控制面板内确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
         return;
     }
     $(".ctlTime").css("visibility","visible");
@@ -707,6 +883,10 @@ function violin_play() {
     showTimeInterval=setInterval(fc_play,1200);
 }
 function violin_pause(obj) {
+    if ($("#lastTime").css("visibility") == "hidden"){
+        alert("请先播放！");
+        return;
+    }
     let type = $(obj).text();
     //console.log(type);
     if (type == "暂停"){
@@ -736,14 +916,14 @@ function next_time() {
 function fc_play() {
     //console.log(play_i);
     var fc_result = document.getElementById("fc_result");
-    fc_result.style.display = "none";
+    fc_result.style.visibility = "hidden";
     var fc_result_s = document.getElementById("fc_result_s");
-    fc_result_s.style.display = "none";
+    fc_result_s.style.visibility = "hidden";
     // alert(ez+"\n"+pz+"\n"+niz)
     let violinTimeDiv = $("#violinTimeDiv");
     let violinTimeSpan = $("#violinTimeSpan");
 
-    $.post('{% url 'fcAnalyse' %}',{"ez":ez,"pz":pz,"niz":niz,"select_start":play_i,"select_end":play_i,"h2_threshold":h2_threshold},
+    $.post('{% url 'fcAnalyse' %}',{"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),"select_start":play_i,"select_end":play_i,"h2_threshold":h2_threshold},
         function(result, statue){
             if(result["result"] === true){
                 //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
@@ -756,8 +936,8 @@ function fc_play() {
                 } else{
                     play_i += fc_info.step;
                 }
-                fc_result.style.display = "inline";
-                fc_result_s.style.display = "inline";
+                fc_result.style.visibility = "visible";
+                fc_result_s.style.visibility = "visible";
                 violinBwt();
             }else {
                 alert(result["msg"])
