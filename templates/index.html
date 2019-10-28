@@ -75,10 +75,11 @@
                         <b>筛选通道：</b>
                         <select id="select_channels" class="selectpicker" multiple data-live-search="true" data-actions-box="true">
                             {% for electrode in fc_info.electrode_names %}
-                                <option>{{ electrode }}</option>
+                                <option value="{{ forloop.counter0 }}">{{ electrode }}</option>
                             {% endfor %}
                         </select>
-                        &nbsp;&nbsp;&nbsp;当前共选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
+                        <button class="btn btn-primary" onclick="referZone()">参考区域</button>
+                        &nbsp;&nbsp;&nbsp;已选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
                     </div>
                     <div style="margin-top: 25px;">
                         <b>筛选时间：{{ fc_info.start }}</b>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -109,19 +110,19 @@
                         <label style="width:200px;">
                             <div class="input-group">
                                 <span class="input-group-addon">EZ</span>
-                                <input class="form-control" type="text" id="EZ">
+                                <input class="form-control" type="text" id="EZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
                             </div>
                         </label>
                         <label style="width:200px;">
                             <div class="input-group">
                                 <span class="input-group-addon">PZ</span>
-                                <input class="form-control" type="text" id="PZ">
+                                <input class="form-control" type="text" id="PZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
                             </div>
                         </label>
                         <label style="width:200px;">
                             <div class="input-group">
                                 <span class="input-group-addon">NIZ</span>
-                                <input class="form-control" type="text" id="NIZ">
+                                <input class="form-control" type="text" id="NIZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
                             </div>
                         </label>
                     </div>
@@ -367,8 +368,8 @@
                     <div id="out_in_river" style="display: inline-block;height: 500px; width: 58%; min-width: 800px"></div>
                     <div id="out_in_heat" style="display: inline-block;height: 500px; width: 40%; min-width: 600px"></div>
                     -->
-                    <div id="out_in_river" style="height: 500px; width: 58%; float: left"></div>
-                    <div id="out_in_heat" style="height: 500px; width: 42%; float: left"></div>
+                    <div id="out_in_river" style="width: 58%; float: left"></div>
+                    <div id="out_in_heat" style="width: 42%; float: left"></div>
                 </div>
             </div>
         </div>
@@ -491,12 +492,14 @@
             h2_threshold = parseFloat(threshold);
             select_start = time_slider.getValue()[0];
             select_end = time_slider.getValue()[1];
+            /*
             let select_electrodes = select_channels.val();
             select_ei = [];
             for (let i =0; i < select_channels.val().length; i++){
                 select_ei.push(fc_info.electrode_names.indexOf(select_electrodes[i]));
             }
-
+            */
+            select_ei = select_channels.val().map(d => parseInt(d));
             $("#h2_threshold").val(h2_threshold);
             h2_threshold_slider.setValue(h2_threshold);
             $("#h2_threshold_value").text(h2_threshold);
@@ -555,8 +558,8 @@
         */
     }
     function select_reset() {
-        select_start = {{ fc_info.start | default:"null"|safe }};
-        select_end = {{ fc_info.end | default:"null"|safe }};
+        select_start = fc_info.start;
+        select_end = fc_info.end;
         select_ei = [];
         for (let i =0; i < electrodes_len; i++){
             select_ei.push(i);
@@ -656,6 +659,7 @@ function getH2() {
 }
 
 function fcAnalyse(){
+    // let startTime = new Date().getTime();
     if (!init){
         alert("请先上传.mat数据文件!");
         return;
@@ -698,6 +702,7 @@ function fcAnalyse(){
             }else {
                 alert(result["msg"])
             }
+            // console.log(new Date().getTime() - startTime);
     });
 }
 
@@ -716,6 +721,11 @@ function outAnalyse(e, type) {
             if(result["result"] === true) {
                 outAnalyseType = type;
                 $("#out_result_s").css("visibility","hidden");
+
+                // 通过所选的电极数来确定图的高度 height
+                let height = out_height_fun(select_ei.length);
+                $("#out_in_river").css("height",height + 2 * select_ei.length);
+                $("#out_in_heat").css("height",height);
 
                 let out_links = result["out_links"];
                 let in_links = result["in_links"];
@@ -850,6 +860,8 @@ function outZoneAnalyse() { // type种类为：中值、均值、总和  median�
             zone_stream_data[i][1] -= min;
         }
     }
+    $("#out_in_river").css("height",450);
+    $("#out_in_heat").css("height",420);
     stream_out_in(zone_stream_data,["EZ", "PZ", "NIZ", "UNKNOWN"], [select_start, select_end], fc_info.step);
     heat_out_in(zone_heap_data, min, max, ["UNKNOWN", "NIZ", "PZ", "EZ"], d3.range(select_start, select_end + fc_info.step, fc_info.step));
     // console.log(zone_data);

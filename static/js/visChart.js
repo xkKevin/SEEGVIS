@@ -934,6 +934,7 @@ function stream_out_in(data,electrode_names,time,step) {
         .call(d3.axisBottom(x));
     */
     var dom = document.getElementById("out_in_river");
+    echarts.dispose(dom);  // 不能在单个容器上初始化多个 ECharts 实例。
     var myChart = echarts.init(dom);
     var option = {
         /*
@@ -1024,6 +1025,7 @@ function stream_out_in(data,electrode_names,time,step) {
 
 function heat_out_in(data,min,max,electrode_names,time) {
     var dom = document.getElementById("out_in_heat");
+    echarts.dispose(dom);  // 不能在单个容器上初始化多个 ECharts 实例。
     var myChart = echarts.init(dom);
 
     var option = {
@@ -1061,7 +1063,8 @@ function heat_out_in(data,min,max,electrode_names,time) {
             calculable: true,
             orient: 'vertical',
             left: '92%',
-            bottom: '50%'
+            //bottom: '50%'
+            top: 'middle'
         },
         series: [{
             type: 'heatmap',

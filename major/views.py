@@ -61,7 +61,7 @@ def index(request):
 
 
 def getH2(request):
-    global matData, start, step
+    global start, step
     if request.method == "GET":
         try:
             s1 = int(request.GET.get('s1'))
@@ -71,7 +71,7 @@ def getH2(request):
             select_end = float(request.GET.get('select_end'))
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            s1_s2 = h2_max_direction(matData['aw_h2'], matData['aw_lag'], s1, s2, select_s, select_l, h2_threshold)
+            s1_s2 = h2_max_direction(s1, s2, select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
@@ -91,7 +91,16 @@ def fcAnalyse(request):
             pz = json.loads(request.POST.get('pz'))
             niz = json.loads(request.POST.get('niz'))
 
-            elec_len = len(electrode_names)
+            # zone_e = np.r_[ez, pz, niz]
+            zone_e = []
+            for i in ez:
+                zone_e.append(i)
+            for i in pz:
+                zone_e.append(i)
+            for i in niz:
+                zone_e.append(i)
+
+            elec_len = len(zone_e)
             '''
             # 判断是否越界 （空数组为false）
             if (ez and ez[-1] >= elec_len):
@@ -107,18 +116,18 @@ def fcAnalyse(request):
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start) / step)  # 筛选的起始时间下标
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
-            all_h2_max_direction(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold)
+            zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold)
 
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "参数有误，无法分析！"})
 
         fileHeader = ["zone", "electrodes", "h2", "lag", "nwd", "wd"]
-        ez_in = cal_fc_in(ez,elec_len,"ez")
-        pz_in = cal_fc_in(pz,elec_len,"pz")
-        niz_in = cal_fc_in(niz,elec_len,"niz")
-        ez_pz = cal_fc_bwt(ez,pz,elec_len,"ez_pz")
-        ez_niz = cal_fc_bwt(ez,niz,elec_len,"ez_niz")
-        pz_niz = cal_fc_bwt(pz,niz,elec_len,"pz_niz")
+        ez_in = cal_fc_in(ez,0,elec_len,"ez")
+        pz_in = cal_fc_in(pz,len(ez),elec_len,"pz")
+        niz_in = cal_fc_in(niz,len(ez)+len(pz),elec_len,"niz")
+        ez_pz = cal_fc_bwt(ez,0,pz,len(ez),elec_len,"ez_pz")
+        ez_niz = cal_fc_bwt(ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
+        pz_niz = cal_fc_bwt(pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
         # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
         fc_analyse = open("static/data/fc_result.csv","w",newline="")
         writer = csv.writer(fc_analyse)
@@ -141,7 +150,7 @@ def fcAnalyse(request):
 
 
 def outAnalyse(request):
-    global matData, start, step
+    global start, step
     if request.method == "GET":
         try:
             select_start = float(request.GET.get('select_start'))
@@ -150,17 +159,17 @@ def outAnalyse(request):
             select_ei = json.loads(request.GET.get('select_ei'))  # 将字符串格式转化为json对象
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            links = out_in(matData['aw_h2'], matData['aw_lag'], select_s, select_l, h2_threshold, select_ei)  # [out_links, in_links]
+            links = out_in(select_s, select_l, h2_threshold, select_ei)  # [out_links, in_links]
         except Exception as e:
-            return JsonResponse({'result': False, 'msg': "时间筛选有误！"})
+            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
         return JsonResponse({'result': True, 'out_links': links[0], "in_links": links[1]})
     return JsonResponse({'result': False, 'msg': "Not GET Request!"})
 
 
-def cal_fc_in(signals,n,zone):
+def cal_fc_in(signals, offset, n, zone):
     '''
     计算区域内FC
-    :param：signals为数组，如[0,2,3]，n表示总电极数，zone表示：ez,pz,niz
+    :param：signals为数组，如[0,2,3]，offset表示该组signals在zone_e下的偏移量，n表示zone_e电极数，zone表示：ez,pz,niz
     :return：如果signals为空数组，则该函数也返回空数组；返回格式例如：["ez","C5-C6--C7-C8",h2,lag,nwd,wd]
     '''
     result = []
@@ -168,13 +177,13 @@ def cal_fc_in(signals,n,zone):
     global h2_lag_direction
     for i in range(slen - 1):
         for j in range(i+1,slen):
-            tmp = [zone,str(electrode_names[signals[i]])+"--"+str(electrode_names[signals[j]])]
-            tmp.extend(h2_lag_direction[position(signals[i],signals[j],n)])
+            tmp = [zone,str(electrode_names[signals[i]])+"--"+str(electrode_names[signals[j]])]   # 需要电极在总电极点的下标 signals[i]
+            tmp.extend(h2_lag_direction[position(offset+i,offset+j,n)])  # 需要电极在zone电极点的下标
             result.append(tmp)
     return result
 
 
-def cal_fc_bwt(s1,s2,n,zone):
+def cal_fc_bwt(s1,offset1,s2,offset2,n,zone):
     '''
     计算区域内FC
     :param：s1,s2均为数组，如[0,2,3]，n表示总电极数，zone表示：ez_pz,ez_niz,pz_niz
@@ -182,10 +191,12 @@ def cal_fc_bwt(s1,s2,n,zone):
     '''
     result = []
     global h2_lag_direction
-    for i in s1:
-        for j in s2:
-            tmp = [zone,str(electrode_names[i]) + "--" + str(electrode_names[j])]
-            tmp.extend(h2_lag_direction[position(i, j, n)])
+    # for i in s1:
+    #     for j in s2:
+    for i in range(len(s1)):
+        for j in range(len(s2)):
+            tmp = [zone,str(electrode_names[s1[i]]) + "--" + str(electrode_names[s2[j]])]
+            tmp.extend(h2_lag_direction[position(offset1+i,offset2+j, n)])
             result.append(tmp)
     return result
 
@@ -202,7 +213,7 @@ def position(s1,s2,n):
     return p+s2-s1-1
 
 
-def h2_max_direction(h2, lag, s1, s2, select_s, select_l, h2_threshold):
+def h2_max_direction(s1, s2, select_s, select_l, h2_threshold):
     '''
     s1,s2代表数字，如 0,3
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
@@ -210,6 +221,109 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l, h2_threshold):
     以及两信号的不加权方向及加权方向
     '''
     # pnum = h2.shape[2]  # 时间点的数量
+    global matData
+    h2 = matData['aw_h2']
+    lag = matData['aw_lag']
+    h2_max = [None] * select_l
+    lag_max = [None] * select_l
+
+    positive = []
+    negative = []
+    neutral = []  # 还要考虑中立的情况
+
+    for pi in range(select_s, select_s + select_l):
+        select_i = pi - select_s
+        if h2[s1, s2, pi] >= h2[s2, s1, pi]:
+            if h2[s1, s2, pi] >= h2_threshold:
+                h2_max[select_i] = h2[s1, s2, pi]
+                lag_max[select_i] = lag[s1, s2, pi]
+
+                if lag_max[select_i] > 0:
+                    negative.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    positive.append(h2_max[select_i])
+                else:
+                    neutral.append(h2_max[select_i])
+            else:
+                h2_max[select_i] = 0
+                lag_max[select_i] = 0
+
+        else:
+            if h2[s2, s1, pi] >= h2_threshold:
+                h2_max[select_i] = h2[s2, s1, pi]
+                lag_max[select_i] = -lag[s2, s1, pi]
+
+                if lag_max[select_i] > 0:
+                    negative.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    positive.append(h2_max[select_i])
+                else:
+                    neutral.append(h2_max[select_i])
+            else:
+                h2_max[select_i] = 0
+                lag_max[select_i] = 0
+
+    sp = sum(positive)
+    sn = sum(negative)
+    lp = len(positive)
+    ln = len(negative)
+    lpn = lp + ln
+    lpnneu = lpn + len(neutral)
+    nw_direction = w_direction = mean_h2 = median_h2 = max_h2 = min_h2 = \
+        mean_p = median_p = mean_n = median_n = max_p = min_p = max_n = min_n = 0
+
+    if lpn:
+        nw_direction = (lp - ln) / lpn
+
+    if sp + sn:
+        w_direction = (sp - sn) / (sp + sn)
+
+    if lpnneu:
+        pn = np.r_[positive,negative,neutral]
+        mean_h2 = np.mean(pn)
+        median_h2 = np.median(pn)
+        max_h2 = max(pn)
+        min_h2 = min(pn)
+
+    if lp:
+        mean_p = sp / lp
+        median_p = np.median(positive)
+        max_p = max(positive)
+        min_p = min(positive)
+
+    if ln:
+        mean_n = sn / ln
+        median_n = np.median(negative)
+        max_n = max(negative)
+        min_n = min(negative)
+
+    return [h2_max,lag_max,nw_direction,w_direction], [median_h2,mean_h2,max_h2,min_h2],\
+           [median_p,mean_p,max_p,min_p], [median_n,mean_n,max_n,min_n]#, [lp, ln]
+
+
+def zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold):
+    '''
+        zone_e：是区域总电极集合：ez,pz,niz
+    '''
+    enum = len(zone_e)  # 区域总电极点的数量
+    global h2_lag_direction  # h2_max, lag_max, nw_direction, w_direction
+    h2_lag_direction.clear()
+    for ei1 in range(enum - 1):
+        for ei2 in range(ei1 + 1, enum):
+            h2_lag_direction.append(h2_max_direction_forFC(zone_e[ei1], zone_e[ei2], select_s, select_l, h2_threshold))
+
+
+def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
+    '''
+    s1,s2代表数字，如 0,3
+    select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
+    返回这组信号中s1与s2的最终h2（最大值）及其对应的时间延迟
+    以及两信号的不加权方向及加权方向
+    '''
+    # pnum = h2.shape[2]  # 时间点的数量
+    global matData
+    h2 = matData['aw_h2']
+    lag = matData['aw_lag']
     h2_max = [None] * select_l
     lag_max = [None] * select_l
 
@@ -234,69 +348,39 @@ def h2_max_direction(h2, lag, s1, s2, select_s, select_l, h2_threshold):
         else:
             if h2[s2, s1, pi] >= h2_threshold:
                 h2_max[select_i] = h2[s2, s1, pi]
-                lag_max[select_i] = -lag[s2, s1, pi]
+                lag_max[select_i] = lag[s2, s1, pi]
 
                 if lag_max[select_i] > 0:
-                    negative.append(h2_max[select_i])
-                elif lag_max[select_i] < 0:
                     positive.append(h2_max[select_i])
+                elif lag_max[select_i] < 0:
+                    negative.append(h2_max[select_i])
             else:
                 h2_max[select_i] = 0
                 lag_max[select_i] = 0
 
     sp = sum(positive)
     sn = sum(negative)
-    lp = len(positive)
-    ln = len(negative)
-    lpn = lp + ln
-    nw_direction = w_direction = mean_h2 = median_h2 = max_h2 = min_h2 = \
-        mean_p = median_p = mean_n = median_n = max_p = min_p = max_n = min_n = 0
-
-    if lpn:
-        nw_direction = (lp - ln) / lpn
-        pn = np.r_[positive,negative]
-        mean_h2 = (sp + sn)/lpn
-        median_h2 = np.median(pn)
-        max_h2 = max(pn)
-        min_h2 = min(pn)
-
-    if sp + sn:
+    lpn = len(positive) + len(negative)
+    if lpn == 0:
+        nw_direction = 0
+    else:
+        nw_direction = (len(positive) - len(negative)) / lpn
+    if sp + sn == 0:
+        w_direction = 0
+    else:
         w_direction = (sp - sn) / (sp + sn)
-
-    if lp:
-        mean_p = sp / lp
-        median_p = np.median(positive)
-        max_p = max(positive)
-        min_p = min(positive)
-
-    if ln:
-        mean_n = sn / ln
-        median_n = np.median(negative)
-        max_n = max(negative)
-        min_n = min(negative)
-
-    return [h2_max,lag_max,nw_direction,w_direction], [median_h2,mean_h2,max_h2,min_h2],\
-           [median_p,mean_p,max_p,min_p], [median_n,mean_n,max_n,min_n]#, [lp, ln]
+    return h2_max, lag_max, nw_direction, w_direction
 
 
-def all_h2_max_direction(h2, lag, select_s, select_l, h2_threshold):
-    enum = h2.shape[0]  # 电极点的数量
-    global h2_lag_direction  # h2_max, lag_max, nw_direction, w_direction
-    h2_lag_direction.clear()
-    for ei1 in range(enum - 1):
-        for ei2 in range(ei1 + 1, enum):
-            # result = h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold)
-            # [nw_direction,w_direction,[median_h2,mean_h2,max_h2,min_h2]]
-            # h2_lag_direction.append([result[0][1], result[0][2], result[1]])
-            h2_lag_direction.append(h2_max_direction(h2, lag, ei1, ei2, select_s, select_l, h2_threshold)[0])
-
-
-def out_in(h2, lag, select_s, select_l, h2_threshold, select_ei):
+def out_in(select_s, select_l, h2_threshold, select_ei):
     '''
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
     select_ei：表示所选电极（通道）下标数组
     返回每一个节点在筛选的时间内的out与in links值
     '''
+    global matData
+    h2 = matData['aw_h2']
+    lag = matData['aw_lag']
     enum = len(select_ei)  # 所选电极点的数量
     # tnum = h2.shape[2] 时间点的数量
     out_links = [[0] * enum for i in range(select_l)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * select_l 错误写法

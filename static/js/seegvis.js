@@ -1,5 +1,6 @@
 // 外部的 js 文件可以使用html中 js 定义的变量、函数等，不同js文件中的函数也可以相互调用！
 var formatNum = (float) => parseFloat(parseFloat(float).toFixed(4));
+var out_height_fun = (n) => n <= 25 ? 24 * n + 200 : 10*(n - 25) + 800; // (n) => 20*n + 250;
 function statisticExceptZero(data) {
     /**
      * 计算除去0后数组的中值、均值、最大值、最小值及数组长度
@@ -485,4 +486,50 @@ function distinct_sort(arr) {
         }
     }
     return result.sort((a,b)=>a-b);
+}
+
+function referZone() {
+    ez_u = to_list(ez.val());
+    pz_u = to_list(pz.val());
+    niz_u = to_list(niz.val());
+
+    if (typeof(ez_u) === "string"){
+        alert("参考区域失败！\nEZ" + ez_u);
+        ez_u = [];
+        return;
+    } else{
+        if (ez_u.length && ez_u[ez_u.length-1] > elen){
+            alert("参考区域失败！\nEZ数字越界！数字范围应为：0至" +  elen);
+            ez_u = [];
+            return;
+        }
+    }
+    if (typeof(pz_u) === "string"){
+        alert("参考区域失败！\nPZ" + pz_u);
+        pz_u = [];
+        return;
+    }else{
+        if (pz_u.length && pz_u[pz_u.length-1] > elen){
+            alert("参考区域失败！\nPZ数字越界！数字范围应为：0至" +  elen);
+            pz_u = [];
+            return;
+        }
+    }
+    if (typeof(niz_u) === "string"){
+        alert("参考区域失败！\nNIZ" + niz_u);
+        niz_u = [];
+        return;
+    }else{
+        if (niz_u.length && niz_u[niz_u.length-1] > elen){
+            alert("参考区域失败！\nNIZ数字越界！数字范围应为：0至" +  elen);
+            niz_u = [];
+            return;
+        }
+    }
+    if (!(ez_u.length + pz_u.length + niz_u.length)){
+        alert("请先确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+        return;
+    }
+    select_channels.selectpicker("val",ez_u.concat(pz_u).concat(niz_u));
+    $("#electrodes_num").text(select_channels.val().length);
 }
