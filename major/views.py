@@ -10,12 +10,10 @@ import csv
 # Create your views here.
 
 matData = None
-h2_lag_direction = []
+h2_lag_direction = []  # h2_max, nw_direction, w_direction
 electrode_names = []
 step = None
 start = None
-old_select_s = -1  # 上次传入的起始时间下标
-old_select_l = -1  # 上次传入的时间长度
 
 def index(request):
     if request.method == "POST":
@@ -73,7 +71,7 @@ def getH2(request):
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
             s1_s2 = h2_max_direction(s1, s2, select_s, select_l, h2_threshold)
         except Exception as e:
-            return JsonResponse({'result': False, 'msg': "信号输入不正确！"})
+            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
     return JsonResponse({'result': False, 'msg': "Not GET Request!"})
 
@@ -86,12 +84,12 @@ def fcAnalyse(request):
     '''
     if request.method == "POST":
         try:
-            global matData, start, step, old_select_s, old_select_l
+            global start, step
             ez = json.loads(request.POST.get('ez'))
             pz = json.loads(request.POST.get('pz'))
             niz = json.loads(request.POST.get('niz'))
 
-            # zone_e = np.r_[ez, pz, niz]
+            # zone_e = np.r_[ez, pz, niz]  此方法如果某个子数组为空，则最后的结果会变成浮点数类型，eg np.r_[[], [1,2]] 会得到 [1.0,2.0]
             zone_e = []
             for i in ez:
                 zone_e.append(i)
@@ -101,15 +99,6 @@ def fcAnalyse(request):
                 zone_e.append(i)
 
             elec_len = len(zone_e)
-            '''
-            # 判断是否越界 （空数组为false）
-            if (ez and ez[-1] >= elec_len):
-                return JsonResponse({'result': False, 'msg': "EZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
-            if (pz and pz[-1] >= elec_len):
-                return JsonResponse({'result': False, 'msg': "PZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
-            if (niz and niz[-1] >= elec_len):
-                return JsonResponse({'result': False, 'msg': "NIZ存在错误电极（数字越界）！\n数字范围应为：0至" + str(elec_len - 1)})
-            '''
 
             h2_threshold = float(request.POST.get('h2_threshold'))
             select_start = float(request.POST.get('select_start'))
@@ -119,32 +108,36 @@ def fcAnalyse(request):
             zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold)
 
         except Exception as e:
-            return JsonResponse({'result': False, 'msg': "参数有误，无法分析！"})
+            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
 
-        fileHeader = ["zone", "electrodes", "h2", "lag", "nwd", "wd"]
-        ez_in = cal_fc_in(ez,0,elec_len,"ez")
-        pz_in = cal_fc_in(pz,len(ez),elec_len,"pz")
-        niz_in = cal_fc_in(niz,len(ez)+len(pz),elec_len,"niz")
-        ez_pz = cal_fc_bwt(ez,0,pz,len(ez),elec_len,"ez_pz")
-        ez_niz = cal_fc_bwt(ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
-        pz_niz = cal_fc_bwt(pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
-        # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
-        fc_analyse = open("static/data/fc_result.csv","w",newline="")
-        writer = csv.writer(fc_analyse)
-        writer.writerow(fileHeader)
-        for i in ez_in:
-            writer.writerow(i)
-        for i in pz_in:
-            writer.writerow(i)
-        for i in niz_in:
-            writer.writerow(i)
-        for i in ez_pz:
-            writer.writerow(i)
-        for i in ez_niz:
-            writer.writerow(i)
-        for i in pz_niz:
-            writer.writerow(i)
-        fc_analyse.close()
+        try:
+            fileHeader = ["zone", "electrodes", "h2", "nwd", "wd"]
+            ez_in = cal_fc_in(ez,0,elec_len,"ez")
+            pz_in = cal_fc_in(pz,len(ez),elec_len,"pz")
+            niz_in = cal_fc_in(niz,len(ez)+len(pz),elec_len,"niz")
+            ez_pz = cal_fc_bwt(ez,0,pz,len(ez),elec_len,"ez_pz")
+            ez_niz = cal_fc_bwt(ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
+            pz_niz = cal_fc_bwt(pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
+            # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
+            fc_analyse = open("static/data/fc_result.csv","w",newline="")
+            writer = csv.writer(fc_analyse)
+            writer.writerow(fileHeader)
+            for i in ez_in:
+                writer.writerow(i)
+            for i in pz_in:
+                writer.writerow(i)
+            for i in niz_in:
+                writer.writerow(i)
+            for i in ez_pz:
+                writer.writerow(i)
+            for i in ez_niz:
+                writer.writerow(i)
+            for i in pz_niz:
+                writer.writerow(i)
+            fc_analyse.close()
+        except Exception as e:
+            return JsonResponse({'result': False, 'msg': "系统文件fc_result.csv写入出错！\n" + repr(e)})
+
         return JsonResponse({'result': True})   # 'zones': [ez,pz,niz]
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 
@@ -306,7 +299,7 @@ def zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold):
         zone_e：是区域总电极集合：ez,pz,niz
     '''
     enum = len(zone_e)  # 区域总电极点的数量
-    global h2_lag_direction  # h2_max, lag_max, nw_direction, w_direction
+    global h2_lag_direction  # h2_max, nw_direction, w_direction
     h2_lag_direction.clear()
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
@@ -325,7 +318,7 @@ def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
     h2 = matData['aw_h2']
     lag = matData['aw_lag']
     h2_max = [None] * select_l
-    lag_max = [None] * select_l
+    # lag_max = [None] * select_l
 
     positive = []
     negative = []
@@ -335,28 +328,26 @@ def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
         if h2[s1, s2, pi] >= h2[s2, s1, pi]:
             if h2[s1, s2, pi] >= h2_threshold:
                 h2_max[select_i] = h2[s1, s2, pi]
-                lag_max[select_i] = lag[s1, s2, pi]
+                # lag_max[select_i] = lag[s1, s2, pi]
 
-                if lag_max[select_i] > 0:
+                if lag[s1, s2, pi] > 0:
                     negative.append(h2_max[select_i])
-                elif lag_max[select_i] < 0:
+                elif lag[s1, s2, pi] < 0:
                     positive.append(h2_max[select_i])
             else:
                 h2_max[select_i] = 0
-                lag_max[select_i] = 0
 
         else:
             if h2[s2, s1, pi] >= h2_threshold:
                 h2_max[select_i] = h2[s2, s1, pi]
-                lag_max[select_i] = lag[s2, s1, pi]
+                # lag_max[select_i] = lag[s2, s1, pi]
 
-                if lag_max[select_i] > 0:
+                if lag[s2, s1, pi] > 0:
                     positive.append(h2_max[select_i])
-                elif lag_max[select_i] < 0:
+                elif lag[s2, s1, pi] < 0:
                     negative.append(h2_max[select_i])
             else:
                 h2_max[select_i] = 0
-                lag_max[select_i] = 0
 
     sp = sum(positive)
     sn = sum(negative)
@@ -369,7 +360,7 @@ def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
         w_direction = 0
     else:
         w_direction = (sp - sn) / (sp + sn)
-    return h2_max, lag_max, nw_direction, w_direction
+    return h2_max, nw_direction, w_direction
 
 
 def out_in(select_s, select_l, h2_threshold, select_ei):

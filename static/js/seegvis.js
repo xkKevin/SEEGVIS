@@ -434,6 +434,14 @@ function csv2array(data, delimeter) {
     return array;
 }
 
+function downloadFCResult() {
+    let rows = [download_FC_data.columns];
+    for (row of download_FC_data){
+        rows.push([row.zone, row.electrodes, row.h2, row.nwd, row.wd]);
+    }
+    exportToCsv("FC_Result.csv",rows);
+}
+
 function downloadFCStatistic() {
     let rows=[];
     rows.push(["zone","median","mean","max","min","num"]);
@@ -468,10 +476,13 @@ function to_list(str_num) {
     result = [];
     for (let i of str_num.split(",")){
         let tmp = i.split("-");
+        let int_start =  parseInt(tmp[0]);
         if (tmp.length == 2){  // dd3.range("2","6","2")  ==> [2,4]  d3.range 可接收字符串
-            result = result.concat(d3.range(tmp[0], parseInt(tmp[1]) + 1));
+            let int_end =  parseInt(tmp[1]);
+            if (int_start >= int_end) return " "+i+" 输入有误！后面的数应大于前面的数！";
+            result = result.concat(d3.range(int_start, int_end + 1));
         }else{
-            result.push(parseInt(tmp[0]))
+            result.push(int_start)
         }
     }
     return distinct_sort(result);  // 列表去重，并且从小到大排序
@@ -498,8 +509,8 @@ function referZone() {
         ez_u = [];
         return;
     } else{
-        if (ez_u.length && ez_u[ez_u.length-1] > elen){
-            alert("参考区域失败！\nEZ数字越界！数字范围应为：0至" +  elen);
+        if (ez_u.length && ez_u[ez_u.length-1] >= elen){
+            alert("参考区域失败！\nEZ" + zone_elen_warn);
             ez_u = [];
             return;
         }
@@ -509,8 +520,8 @@ function referZone() {
         pz_u = [];
         return;
     }else{
-        if (pz_u.length && pz_u[pz_u.length-1] > elen){
-            alert("参考区域失败！\nPZ数字越界！数字范围应为：0至" +  elen);
+        if (pz_u.length && pz_u[pz_u.length-1] >= elen){
+            alert("参考区域失败！\nPZ" + zone_elen_warn);
             pz_u = [];
             return;
         }
@@ -520,8 +531,8 @@ function referZone() {
         niz_u = [];
         return;
     }else{
-        if (niz_u.length && niz_u[niz_u.length-1] > elen){
-            alert("参考区域失败！\nNIZ数字越界！数字范围应为：0至" +  elen);
+        if (niz_u.length && niz_u[niz_u.length-1] >= elen){
+            alert("参考区域失败！\nNIZ" + zone_elen_warn);
             niz_u = [];
             return;
         }

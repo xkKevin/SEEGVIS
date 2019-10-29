@@ -431,11 +431,11 @@ function violinBwt() {
       .append("g")
         .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
-    var outData=[];
+    download_FC_data=[];
     // Read the data and compute summary statistics for each specie
     d3.csv("/static/data/fc_result.csv", function(data) {
         //console.log(data);
-        outData=data;
+        download_FC_data=data;
         //console.log(d3.median(data[0].h2.slice(1,-1).split(",")));
       // Build and Show the Y scale
      var dataFilter = data.map(function(d){return d3.median(d.h2.slice(1,-1).split(",")) });
@@ -585,9 +585,9 @@ function violinBwt() {
         .style("margin-left","-15px")
         .html("加权方向性")
         .on("click",function () {
-            directionality(outData,"wd")
+            directionality(download_FC_data,"wd")
         });
-        //.on("click",directionality(outData,"wd"));
+        //.on("click",directionality(download_FC_data,"wd"));
 
     chartButton.append("button")
         .attr("class","btn btn-primary")
@@ -595,7 +595,7 @@ function violinBwt() {
         .style("margin-left","15px")
         .html("非加权方向性")
         .on("click",function () {
-            directionality(outData,"nwd")
+            directionality(download_FC_data,"nwd")
         });
     chartButton.append("button")
         .attr("class","btn btn-warning")
@@ -608,9 +608,6 @@ function violinBwt() {
 }
 
 function directionality(data,type) {
-    /*
-       outData=data;
-     */
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,

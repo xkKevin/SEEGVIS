@@ -301,7 +301,8 @@
                                 <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
                             </td>
                             <td >
-                                <a id="fc_result" style="margin-left: 15px;visibility: hidden;: none;" href="/static/data/fc_result.csv">下载FC计算结果</a>
+                                <!-- <a id="fc_result" style="margin-left: 15px;visibility: hidden;" href="/static/data/fc_result.csv">下载FC计算结果</a> -->
+                                <a id="fc_result" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCResult()">下载FC计算结果</a>
                             </td>
                              <td >
                                 <a id="fc_result_s" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
@@ -425,8 +426,10 @@
     var select_ei = [];  // 选择电极（通道）的下标数组
     var select_wave = $("#select_wave");
     var elen = 0; // 电极的个数
+    var zone_elen_warn = "数字越界！数字范围应为：0至";
     if (init){
         elen = fc_info["electrode_names"].length;
+        zone_elen_warn = zone_elen_warn + (elen - 1);
         time_slider = new Slider('#time_slider', {
             min: fc_info.start,
             max: fc_info.end,
@@ -516,8 +519,8 @@
                 ez_u = [];
                 zone_flag = false;
             } else{
-                if (ez_u.length && ez_u[ez_u.length-1] > elen){
-                    select_text.css("color","darkred").text("提示：EZ数字越界！数字范围应为：0至" +  elen);
+                if (ez_u.length && ez_u[ez_u.length-1] >= elen){
+                    select_text.css("color","darkred").text("提示：EZ" + zone_elen_warn);
                     ez_u = [];
                     zone_flag = false;
                 }
@@ -527,8 +530,8 @@
                 pz_u = [];
                 zone_flag = false;
             }else{
-                if (pz_u.length && pz_u[pz_u.length-1] > elen){
-                    select_text.css("color","darkred").text("提示：PZ数字越界！数字范围应为：0至" +  elen);
+                if (pz_u.length && pz_u[pz_u.length-1] >= elen){
+                    select_text.css("color","darkred").text("提示：PZ" + zone_elen_warn);
                     pz_u = [];
                     zone_flag = false;
                 }
@@ -538,8 +541,8 @@
                 niz_u = [];
                 zone_flag = false;
             }else{
-                if (niz_u.length && niz_u[niz_u.length-1] > elen){
-                    select_text.css("color","darkred").text("提示：NIZ数字越界！数字范围应为：0至" +  elen);
+                if (niz_u.length && niz_u[niz_u.length-1] >= elen){
+                    select_text.css("color","darkred").text("提示：NIZ" + zone_elen_warn);
                     niz_u = [];
                     zone_flag = false;
                 }
@@ -710,6 +713,7 @@ function fcAnalyse(){
 var zone_data = [];
 var outAnalyseType;  // 四种分析类型
 var download_zone_data = [];  // ["TIME", "EZ","PZ","NIZ","UNKNOWN"]
+var download_FC_data=[];  // [{"zone":, "electrodes":, "h2":, "nwd":, "wd":}, ...]
 var type_note; // 字符串，说明是何种out分析，及何种统计分析 eg："OUT --- median"
 function outAnalyse(e, type) {
     if(!fc_info){
