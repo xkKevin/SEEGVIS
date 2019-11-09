@@ -17,6 +17,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.11/css/bootstrap-select.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.min.js"></script>
+
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
 
@@ -268,30 +271,16 @@
                     <table style="margin-bottom: 15px;" align="center">
                         <tbody>
                         <tr>
-                            <!--
-                            <td style="margin-left: 10px">
-                                <label class="btn btn-primary" onclick="assignZone()">参考空间坐标</label>
-                            </td>
-                            <td style="padding:15px 10px">
-                                <div class="input-group">
-                                    <span class="input-group-addon">EZ: </span>
-                                    <input class="form-control" type="text" id="EZ">
-                                </div>
-                            </td>
-                            <td style="padding:15px 10px">
-                                <div class="input-group">
-                                    <span class="input-group-addon">PZ: </span>
-                                    <input class="form-control" type="text" id="PZ">
-                                </div>
-                            </td>
-                            <td style="padding:15px 10px">
-                                <div class="input-group">
-                                    <span class="input-group-addon">NIZ: </span>
-                                    <input class="form-control" type="text" id="NIZ">
-                                </div>
-                            </td>
-                            -->
                             <td>
+                                <b style="font-size: larger;">调整小提琴图 bins</b>
+                            </td>
+                            <td style="padding-left: 10px;padding-right: 8px;">
+                                <input id="violin_bins" type="text"/>
+                            </td>
+                            <td style="padding-left: 10px;" title="切换模式：显示点或显示四分位">
+                                <input type="checkbox" id="violin_status" checked>
+                            </td>
+                            <td style="padding-left: 10px;">
                                 <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
                             </td>
                             <td style="padding-left: 10px;">
@@ -392,7 +381,8 @@
     var niz_p=[];
     var ez_u = [], pz_u = [], niz_u = []; // 与ez_p一样，但此信息来自用户自定义
 
-    var databyType={};
+    var databyType={}; // 这是 h2 的 统计结果
+    var directionByType={};  // 这是 directionality 的 统计结果
     var ez = $("#EZ"), pz = $("#PZ"), niz = $("#NIZ");  // zone 电极输入
     var play_i = showTimeInterval = null;  // 小提琴图的播放
 
@@ -408,6 +398,8 @@
     .attr("class", "tooltip1")  //area
     .style("opacity", 0).style("width","60px").style("height","20px");
 
+    var show_type_direction = 0; // 3 表示 "nwd" 4 表示 "wd"
+
     var h2_threshold = 0;
     var h2_threshold_slider = new Slider("#h2_threshold2", {
         min: 0,
@@ -419,6 +411,47 @@
         $("#h2_threshold_value").text(val.newValue);
         $("#h2_threshold").val(val.newValue);
         h2_threshold = val.newValue;
+    });
+
+    var violin_bins_slider = new Slider("#violin_bins", {
+        min: 1,
+        max: 20,
+        step: 1,
+        value: 10
+    });
+    violin_bins_slider.on("change", function (val) {  // 不能用slide，因为slide 是指拖动，不是改变
+        if (download_FC_data.length > 0){
+            violinBwt();
+            // 3 表示 "nwd" 4 表示 "wd"
+            if (show_type_direction){
+                directionality(show_type_direction)
+            }
+        }
+    });
+
+    $('#violin_status').bootstrapSwitch({    //初始化按钮
+        onText:"Yes",
+        offText:"No",
+        labelText: "Show Points",
+        labelWidth: 80,
+        onColor:"success",
+        offColor:"warning",
+        // size:"small",
+        onSwitchChange:function(event,state){
+            if (download_FC_data.length > 0){
+                violinBwt();
+                if (show_type_direction){
+                    directionality(show_type_direction)
+                }
+            }
+           /*
+          if(state){
+               console.log("开启");
+             }else{
+              console.log("关闭");
+             }
+         */
+        }
     });
 
     var time_slider = null;
@@ -479,7 +512,8 @@
     });
     $("#systemGuide").click(function(e){
         e.stopPropagation();
-        $(window).attr('location', '{% url 'guide' %}');
+        // $(window).attr('location', '{% url 'guide' %}');  // 在当前页面跳转
+        window.open('{% url 'guide' %}');  // 在新窗口下跳转
     });
 
     var select_start = {{ fc_info.start | default:"null"|safe }};
@@ -693,7 +727,7 @@ function fcAnalyse(){
 
     $.post('{% url 'fcAnalyse' %}',{"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),
             "select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
-        function(result, statue){
+        function(result, statue){   // ["zone", "electrodes", "h2", "nwd", "wd"]  [ez_in, pz_in, niz_in, ez_pz, ez_niz, pz_niz]
             if(result["result"] === true){
                 //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
                 // var zones = result["zones"];
@@ -701,7 +735,11 @@ function fcAnalyse(){
                 fc_result_s.style.visibility = "visible";
                 violinTimeDiv.css("display","inline");
                 violinTimeSpan.text(select_start + " -- " + select_end);
+                download_FC_data = result["data"].reduce((a,b)=> a.concat(b));
                 violinBwt();
+                if (show_type_direction){
+                    directionality(show_type_direction)
+                }
             }else {
                 alert(result["msg"])
             }
@@ -896,7 +934,7 @@ function violin_play() {
     if (showTimeInterval) {
         clearInterval(showTimeInterval);
     }
-    showTimeInterval=setInterval(fc_play,1200);
+    showTimeInterval=setInterval(fc_play,1500);
 }
 function violin_pause(obj) {
     if ($("#lastTime").css("visibility") == "hidden"){
@@ -909,7 +947,7 @@ function violin_pause(obj) {
         clearInterval(showTimeInterval);
         $(obj).text("继续");
     }else {
-        showTimeInterval=setInterval(fc_play,1200);
+        showTimeInterval=setInterval(fc_play,1500);
         $(obj).text("暂停");
     }
 }
@@ -954,7 +992,11 @@ function fc_play() {
                 }
                 fc_result.style.visibility = "visible";
                 fc_result_s.style.visibility = "visible";
+                download_FC_data = result["data"].reduce((a,b)=> a.concat(b));
                 violinBwt();
+                if (show_type_direction){
+                    directionality(show_type_direction)
+                }
             }else {
                 alert(result["msg"])
             }

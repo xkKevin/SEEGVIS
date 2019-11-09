@@ -3,7 +3,7 @@ var formatNum = (float) => parseFloat(parseFloat(float).toFixed(4));
 var out_height_fun = (n) => n <= 25 ? 24 * n + 200 : 10*(n - 25) + 800; // (n) => 20*n + 250;
 function statisticExceptZero(data) {
     /**
-     * 计算除去0后数组的中值、均值、最大值、最小值及数组长度
+     * 计算除去0后数组的中值、均值、最大值、最小值、数组长度、Q1、Q3
      */
     let dataExcept0 = [];
     for(let i = 0; i < data.length; i++){
@@ -11,10 +11,13 @@ function statisticExceptZero(data) {
             dataExcept0.push(data[i])
         }
     }
-    if (dataExcept0.length){
-        return [d3.median(dataExcept0),d3.mean(dataExcept0),d3.max(dataExcept0),d3.min(dataExcept0),dataExcept0.length];
+    let len_e0 = dataExcept0.length;
+    if (len_e0){
+        dataExcept0.sort();
+        // return [d3.median(dataExcept0),d3.mean(dataExcept0),d3.max(dataExcept0),d3.min(dataExcept0),dataExcept0.length];
+        return [d3.quantile(dataExcept0,0.5),d3.mean(dataExcept0),dataExcept0[len_e0 - 1],dataExcept0[0],len_e0,d3.quantile(dataExcept0,0.25),d3.quantile(dataExcept0,0.75)];
     }
-    return [0,0,0,0,0];
+    return [0,0,0,0,0,0,0];
 }
 function operateMarks() {
         if ($("#operate_type").text() == "新增"){
@@ -435,22 +438,29 @@ function csv2array(data, delimeter) {
 }
 
 function downloadFCResult() {
-    let rows = [download_FC_data.columns];
-    for (row of download_FC_data){
-        rows.push([row.zone, row.electrodes, row.h2, row.nwd, row.wd]);
-    }
-    exportToCsv("FC_Result.csv",rows);
+    let rows = [["zone", "electrodes", "h2", "nwd", "wd"]];
+    exportToCsv("FC_Result.csv",rows.concat(download_FC_data));
 }
 
 function downloadFCStatistic() {
     let rows=[];
-    rows.push(["zone","median","mean","max","min","num"]);
-    if (databyType.ez) rows.push(["ez"].concat(databyType.ez));
-    if (databyType.pz) rows.push(["pz"].concat(databyType.pz));
-    if (databyType.niz) rows.push(["niz"].concat(databyType.niz));
-    if (databyType.ez_pz) rows.push(["ez_pz"].concat(databyType.ez_pz));
-    if (databyType.ez_niz) rows.push(["ez_niz"].concat(databyType.ez_niz));
-    if (databyType.pz_niz) rows.push(["pz_niz"].concat(databyType.pz_niz));
+    rows.push(["type","zone","median","mean","max","min","num", "Q1", "Q2"]);  // 中值、均值、最大值、最小值、数组长度、Q1、Q3
+    if (databyType.ez) rows.push(["h2","ez"].concat(databyType.ez));
+    if (databyType.pz) rows.push(["h2","pz"].concat(databyType.pz));
+    if (databyType.niz) rows.push(["h2","niz"].concat(databyType.niz));
+    if (databyType.ez_pz) rows.push(["h2","ez_pz"].concat(databyType.ez_pz));
+    if (databyType.ez_niz) rows.push(["h2","ez_niz"].concat(databyType.ez_niz));
+    if (databyType.pz_niz) rows.push(["h2","pz_niz"].concat(databyType.pz_niz));
+    // show_type_direction : 3 表示 "nwd" 4 表示 "wd"
+    if (show_type_direction){
+        let direct_type =  show_type_direction === 3 ? "nwd" : "wd";
+        if (directionByType.ez) rows.push([direct_type,"ez"].concat(directionByType.ez));
+        if (directionByType.pz) rows.push([direct_type,"pz"].concat(directionByType.pz));
+        if (directionByType.niz) rows.push([direct_type,"niz"].concat(directionByType.niz));
+        if (directionByType.ez_pz) rows.push([direct_type,"ez_pz"].concat(directionByType.ez_pz));
+        if (directionByType.ez_niz) rows.push([direct_type,"ez_niz"].concat(directionByType.ez_niz));
+        if (directionByType.pz_niz) rows.push([direct_type,"pz_niz"].concat(directionByType.pz_niz));
+    }
     exportToCsv("FCStatisticResult.csv",rows);
 }
 

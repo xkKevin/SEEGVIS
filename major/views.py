@@ -107,38 +107,19 @@ def fcAnalyse(request):
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
             zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold)
 
-        except Exception as e:
-            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
-
-        try:
-            fileHeader = ["zone", "electrodes", "h2", "nwd", "wd"]
+            # fileHeader = ["zone", "electrodes", "h2", "nwd", "wd"]
             ez_in = cal_fc_in(ez,0,elec_len,"ez")
             pz_in = cal_fc_in(pz,len(ez),elec_len,"pz")
             niz_in = cal_fc_in(niz,len(ez)+len(pz),elec_len,"niz")
             ez_pz = cal_fc_bwt(ez,0,pz,len(ez),elec_len,"ez_pz")
             ez_niz = cal_fc_bwt(ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
             pz_niz = cal_fc_bwt(pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
-            # w 表示重新写入文件，newline=""表示行末为""，要不然会存在空行的情况
-            fc_analyse = open("static/data/fc_result.csv","w",newline="")
-            writer = csv.writer(fc_analyse)
-            writer.writerow(fileHeader)
-            for i in ez_in:
-                writer.writerow(i)
-            for i in pz_in:
-                writer.writerow(i)
-            for i in niz_in:
-                writer.writerow(i)
-            for i in ez_pz:
-                writer.writerow(i)
-            for i in ez_niz:
-                writer.writerow(i)
-            for i in pz_niz:
-                writer.writerow(i)
-            fc_analyse.close()
-        except Exception as e:
-            return JsonResponse({'result': False, 'msg': "系统文件fc_result.csv写入出错！\n" + repr(e)})
 
-        return JsonResponse({'result': True})   # 'zones': [ez,pz,niz]
+        except Exception as e:
+            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
+
+        # return JsonResponse({'result': True, "ez":ez_in, "pz":pz_in, "niz":niz_in, "ez_pz":ez_pz, "ez_niz":ez_niz, "pz_niz":pz_niz})   # 'zones': [ez,pz,niz]
+        return JsonResponse({'result': True, "data":[ez_in, pz_in, niz_in, ez_pz, ez_niz, pz_niz]})   # 'zones': [ez,pz,niz]
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 
 

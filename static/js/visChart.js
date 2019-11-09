@@ -414,7 +414,7 @@ function violinBwt() {
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
+        height = 350 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
     d3.select("#violinRight").selectAll("*").remove();
@@ -431,14 +431,11 @@ function violinBwt() {
       .append("g")
         .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
-    download_FC_data=[];
     // Read the data and compute summary statistics for each specie
-    d3.csv("/static/data/fc_result.csv", function(data) {
-        //console.log(data);
-        download_FC_data=data;
+
         //console.log(d3.median(data[0].h2.slice(1,-1).split(",")));
       // Build and Show the Y scale
-     var dataFilter = data.map(function(d){return d3.median(d.h2.slice(1,-1).split(",")) });
+     var dataFilter = download_FC_data.map(function(d){return d3.median(d[2]) });  //download_FC_data:["zone", "electrodes", "h2", "nwd", "wd"]
     var max_h2 = d3.max(dataFilter) * 1.2;
     var max_y = max_h2 > 1 ? 1 : max_h2;
       var y = d3.scaleLinear()
@@ -459,18 +456,18 @@ function violinBwt() {
       // Features of the histogram
       var histogram = d3.histogram()
             .domain(y.domain())
-            .thresholds(y.ticks(10))    // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+            .thresholds(y.ticks(violin_bins_slider.getValue()))    // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
             .value(d => d);
 
       // Compute the binning for each group of the dataset
       var sumstat = d3.nest()  // nest function allows to group the calculation per level of a factor:分层地分组数组元素。
-        .key(function(d) { return d.zone;})
+        .key(function(d) { return d[0];})
         .rollup(function(d) {   // For each key..
-          input = d.map(function(g) { return d3.median(g.h2.slice(1,-1).split(","));});    // Keep the variable called Sepal_Length
+          input = d.map(function(g) { return d3.median(g[2]);});    // Keep the variable called Sepal_Length
           bins = histogram(input);   // And compute the binning on it.
           return(bins)
         })
-        .entries(data); //返回一组键-值元组（其实就是一个字典）
+        .entries(download_FC_data); //返回一组键-值元组（其实就是一个字典）
       // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
       var maxNum = 0;
       for (i in sumstat ){
@@ -494,8 +491,8 @@ function violinBwt() {
         .range(d3.schemeSet2);
       var count=0;
       // Add the shape to this svg!
-      databyType = {};
-      svg.selectAll("myViolin")
+      // databyType = {};
+      let myViolin = svg.selectAll("myViolin")
         .data(sumstat)
         .enter()        // So now we are working group per group
         .append("g")
@@ -509,7 +506,14 @@ function violinBwt() {
               databyType[d.key] = statisticExceptZero(pdata);
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
-          .on("mouseover", function (d) {
+        .on("mouseout", function (d) {
+            div2.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+
+      if($('#violin_status').bootstrapSwitch("state")){
+          myViolin.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
             div2.transition()
                 .duration(300)
@@ -521,12 +525,8 @@ function violinBwt() {
                 "<br>点数量："+formatNum(databyType[d.key][4]))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
-        })
-        .on("mouseout", function (d) {
-            div2.transition()
-                .duration(500)
-                .style("opacity", 0);
-        }).append("path")
+            })
+              .append("path")
             .datum(function(d){ return d.value})     // So now we are working bin per bin
             .style("stroke", "none")
             .style("fill",function (d) {
@@ -538,43 +538,87 @@ function violinBwt() {
                 .y(function(d){ return(y((d.x0+d.x1)/2)) } )
                 .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
             );
-    //console.log(databyType);
-      // Add individual points with jitter
-      var jitterWidth = 40;
-      svg
-        .selectAll("indPoints")
-        .data(data)
-        .enter()
-        .append("circle")
-          .attr("cx", function(d){return(x(d.zone) + x.bandwidth()/2 - Math.random()*jitterWidth )})
-          .attr("cy", function(d){return(y(d3.median(d.h2.slice(1,-1).split(","))))})
-          .attr("r", 4)
-          .style("fill", function(d){ return(myColor(d3.median(d.h2.slice(1,-1).split(","))))})
-          .attr("stroke", "white")
-          .on("mouseover", function (d) {
+        //console.log(databyType);
+        // Add individual points with jitter
+          var jitterWidth = 40;
+          svg.selectAll("indPoints")
+            .data(download_FC_data)
+            .enter()
+            .append("circle")
+              .attr("cx", function(d){return(x(d[0]) + x.bandwidth()/2 - Math.random()*jitterWidth )})
+              .attr("cy", function(d){return(y(d3.median(d[2])))})
+              .attr("r", 4)
+              .style("fill", function(d){ return(myColor(d3.median(d[2])))})
+              .attr("stroke", "white")
+              .on("mouseover", function (d) {
+                  //sessionStorage.setItem("dvalue",d.value);
+                div3.transition()
+                    .duration(300)
+                    .style("opacity", .9);
+                div3.html(formatNum(d3.median(d[2])))
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+                })
+              .on("mouseout", function (d) {
+                div3.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+                })
+              .on("click",function (d) {
+                  var sub_h2 = d[2];
+                  var subdata = [];
+                  for (i of sub_h2){
+                      subdata.push({"electrodes":d[1],"h2":i})
+                  }
+                  subviolinFC(subdata,d[0],d[1])
+              });
+      }else{
+          myViolin.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div3.transition()
+            div2.transition()
                 .duration(300)
-                .style("opacity", .9);
-            div3.html(formatNum(d3.median(d.h2.slice(1,-1).split(","))))
+                .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
+            div2.html("Q1："+formatNum(databyType[d.key][5])+
+                "<br>Q2："+formatNum(databyType[d.key][0])+
+                "<br>Q3："+formatNum(databyType[d.key][6])+
+                "<br>均值："+formatNum(databyType[d.key][1])+
+                "<br>最大值："+formatNum(databyType[d.key][2]))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
-          .on("mouseout", function (d) {
-            div3.transition()
-                .duration(500)
-                .style("opacity", 0);
+              .append("path")
+            .datum(function(d){ return d.value})     // So now we are working bin per bin
+            .style("stroke", "none")
+            .style("fill",function (d) {
+                return myColorViolin(count++%6);
             })
-          .on("click",function (d) {
-              var sub_h2 = d.h2.slice(1,-1).split(',');
-              var subdata = [];
-              for (i of sub_h2){
-                  subdata.push({"electrodes":d.electrodes,"h2":i})
-              }
-              subviolinFC(subdata,d.zone,d.electrodes)
-          })
+            .attr("d", d3.area()   // 这里的x0表示底，x1表示高，y表示宽
+                .x0( function(d){ return(xNum(-d.length)) } )
+                .x1(function(d){ return(xNum(d.length)) } )
+                .y(function(d){ return(y((d.x0+d.x1)/2)) } )
+                .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
+            );
 
-    });
+          myViolin.append("rect")
+              .attr("fill","black")
+              .attr("x",x.bandwidth()/2-2)  // 矩形的 (x,y) 是右上角
+              .attr("y",function (d) {
+                  return y(databyType[d.key][6])
+              })
+              .attr("height", function (d) {
+                  return y(databyType[d.key][5]) - y(databyType[d.key][6]);
+              })
+              .attr("width", 4);
+
+          myViolin.append("circle")
+              .attr("cx", x.bandwidth()/2 )
+              .attr("cy", function (d) {
+                  return y(databyType[d.key][0])
+              })
+              .attr("r", 3)
+              .style("fill", "red")
+              .attr("stroke", "red")
+      }
 
     var chartButton = violin.append("div").attr("id","chartButton")
         .style("margin-top","10px");
@@ -585,7 +629,8 @@ function violinBwt() {
         .style("margin-left","-15px")
         .html("加权方向性")
         .on("click",function () {
-            directionality(download_FC_data,"wd")
+            show_type_direction = 4;
+            directionality(4) // ["zone", "electrodes", "h2", "nwd", "wd"]
         });
         //.on("click",directionality(download_FC_data,"wd"));
 
@@ -595,7 +640,8 @@ function violinBwt() {
         .style("margin-left","15px")
         .html("非加权方向性")
         .on("click",function () {
-            directionality(download_FC_data,"nwd")
+            show_type_direction = 3;
+            directionality(3)
         });
     chartButton.append("button")
         .attr("class","btn btn-warning")
@@ -603,11 +649,12 @@ function violinBwt() {
         .style("margin-left","15px")
         .html("取消")
         .on("click",function () {
+            show_type_direction = 0;
             d3.select("#directionality").selectAll("*").remove();
         });
 }
 
-function directionality(data,type) {
+function directionality(type) {  // 3 表示 "nwd" 4 表示 "wd"
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,
@@ -615,7 +662,7 @@ function directionality(data,type) {
     var direction = d3.select("#directionality");
     direction.selectAll("*").remove();
     var title = "加权方向性小提琴图";
-    if (type === "nwd"){
+    if (type === 3){
         title = "非加权方向性小提琴图";
     }
     direction.append("h3")
@@ -648,18 +695,18 @@ function directionality(data,type) {
       // Features of the histogram
       var histogram = d3.histogram()
             .domain(y.domain())
-            .thresholds(y.ticks(20))    // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+            .thresholds(y.ticks(violin_bins_slider.getValue()))    // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
             .value(d => d);
 
       // Compute the binning for each group of the dataset
       var sumstat = d3.nest()  // nest function allows to group the calculation per level of a factor:分层地分组数组元素。
-        .key(function(d) { return d.zone;})
+        .key(function(d) { return d[0];})
         .rollup(function(d) {   // For each key..
           input = d.map(function(g) { return g[type];});    // Keep the variable called Sepal_Length
           bins = histogram(input);   // And compute the binning on it.
           return(bins)
         })
-        .entries(data); //返回一组键-值元组（其实就是一个字典）
+        .entries(download_FC_data); //返回一组键-值元组（其实就是一个字典）
       // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
       var maxNum = 0;
       for (i in sumstat ){
@@ -681,9 +728,8 @@ function directionality(data,type) {
         .domain(d3.range(0,6))  //  x.domain()获取x定义域的值
         .range(d3.schemeSet2);
       var count=0;
-        var datebyType={};
-      svg
-        .selectAll("myViolinDirection")
+      // directionByType={};
+      let myViolinDirection = svg.selectAll("myViolinDirection")
         .data(sumstat)
         .enter()        // So now we are working group per group
         .append("g")
@@ -694,64 +740,126 @@ function directionality(data,type) {
                       pdata.push(d.value[i][j]);
                   }
               }
-              datebyType[d.key] = pdata;
+              pdata.sort((a,b)=>a-b);  // 一定要注意，排序是按照字符串首字母来的！！！！！！      中值、均值、最大值、最小值、数组长度、Q1、Q3
+              directionByType[d.key] = [d3.quantile(pdata,0.5),d3.mean(pdata),pdata[pdata.length - 1],pdata[0],pdata.length,d3.quantile(pdata,0.25),d3.quantile(pdata,0.75)];
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
-          .on("mouseover", function (d) {
-              //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
-                .duration(300)
-                .style("opacity", .9);
-            div2.html("中值："+Math.round(d3.median(datebyType[d.key])*10000)/10000+
-                "<br>均值："+Math.round(d3.mean(datebyType[d.key])*10000)/10000+
-                "<br>最大值："+Math.round(d3.max(datebyType[d.key])*10000)/10000+
-                "<br>最小值："+Math.round(d3.min(datebyType[d.key])*10000)/10000)
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-        })
         .on("mouseout", function (d) {
             div2.transition()
                 .duration(500)
                 .style("opacity", 0);
-        })
-        .append("path")
-            .datum(function(d){ return(d.value)})     // So now we are working bin per bin
+        });
+      if($('#violin_status').bootstrapSwitch("state")) {
+            myViolinDirection.on("mouseover", function (d) {
+                      //sessionStorage.setItem("dvalue",d.value);
+                    div2.transition()
+                        .duration(300)
+                        .style("opacity", .9);
+                    div2.html("中值："+formatNum(directionByType[d.key][0])+
+                        "<br>均值："+formatNum(directionByType[d.key][1])+
+                        "<br>最大值："+formatNum(directionByType[d.key][2])+
+                        "<br>最小值："+formatNum(directionByType[d.key][3])+
+                        "<br>点数量："+formatNum(directionByType[d.key][4]))
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                    })
+                .append("path")
+              .datum(function (d) {
+                  return (d.value)
+              })     // So now we are working bin per bin
+              .style("stroke", "none")
+              .style("fill", function (d) {
+                  return myColorViolin(count++ % 6);
+              })
+              .attr("d", d3.area()
+                  .x0(xNum(0))
+                  .x1(function (d) {
+                      return (xNum(d.length))
+                  })
+                  .y(function (d) {
+                      return (y((d.x0 + d.x1) / 2))
+                  })
+                  .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
+              );
+
+          // Add individual points with jitter
+          var jitterWidth = 40;
+          svg
+              .selectAll("indPoints")
+              .data(download_FC_data)
+              .enter()
+              .append("circle")
+              .attr("cx", function (d) {
+                  return (x(d[0]) + x.bandwidth() / 2 - Math.random() * jitterWidth)
+              })
+              .attr("cy", function (d) {
+                  return (y(d[type]))
+              })
+              .attr("r", 4)
+              .style("fill", function (d) {
+                  return (myColor(d[type]))
+              })
+              .attr("stroke", "white")
+              .on("mouseover", function (d) {
+                  div3.transition()
+                      .duration(300)
+                      .style("opacity", .9);
+                  div3.html(formatNum(d[type]))
+                      .style("left", (d3.event.pageX) + "px")
+                      .style("top", (d3.event.pageY - 28) + "px");
+              })
+              .on("mouseout", function (d) {
+                  div3.transition()
+                      .duration(500)
+                      .style("opacity", 0);
+              });
+      }else{
+          myViolinDirection.on("mouseover", function (d) {
+              //sessionStorage.setItem("dvalue",d.value);
+            div2.transition()
+                .duration(300)
+                .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
+            div2.html("Q1："+formatNum(directionByType[d.key][5])+
+                "<br>Q2："+formatNum(directionByType[d.key][0])+
+                "<br>Q3："+formatNum(directionByType[d.key][6])+
+                "<br>均值："+formatNum(directionByType[d.key][1])+
+                "<br>最大值："+formatNum(directionByType[d.key][2]))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+              .append("path")
+            .datum(function(d){ return d.value})     // So now we are working bin per bin
             .style("stroke", "none")
             .style("fill",function (d) {
                 return myColorViolin(count++%6);
             })
-            .attr("d", d3.area()
-                .x0( xNum(0) )
+            .attr("d", d3.area()   // 这里的x0表示底，x1表示高，y表示宽
+                .x0( function(d){ return(xNum(-d.length)) } )
                 .x1(function(d){ return(xNum(d.length)) } )
                 .y(function(d){ return(y((d.x0+d.x1)/2)) } )
                 .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
             );
 
-      // Add individual points with jitter
-      var jitterWidth = 40;
-      svg
-        .selectAll("indPoints")
-        .data(data)
-        .enter()
-        .append("circle")
-          .attr("cx", function(d){return(x(d.zone) + x.bandwidth()/2 - Math.random()*jitterWidth )})
-          .attr("cy", function(d){return(y(d[type]))})
-          .attr("r", 4)
-          .style("fill", function(d){ return(myColor(d[type]))})
-          .attr("stroke", "white")
-          .on("mouseover", function (d) {
-            div3.transition()
-                .duration(300)
-                .style("opacity", .9);
-            div3.html(formatNum(d[type]))
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-            })
-          .on("mouseout", function (d) {
-            div3.transition()
-                .duration(500)
-                .style("opacity", 0);
-            });
+          myViolinDirection.append("rect")
+              .attr("fill","black")
+              .attr("x",x.bandwidth()/2-2)  // 矩形的 (x,y) 是右上角
+              .attr("y",function (d) {
+                  return y(directionByType[d.key][6])
+              })
+              .attr("height", function (d) {
+                  return y(directionByType[d.key][5]) - y(directionByType[d.key][6]);
+              })
+              .attr("width", 4);
+
+          myViolinDirection.append("circle")
+              .attr("cx", x.bandwidth()/2 )
+              .attr("cy", function (d) {
+                  return y(directionByType[d.key][0])
+              })
+              .attr("r", 3)
+              .style("fill", "red")
+              .attr("stroke", "red")
+      }
 }
 
 function subviolinFC(data,zone,electrodes) {
@@ -778,7 +886,7 @@ function subviolinFC(data,zone,electrodes) {
         .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
 
-    var dataFilter = data.map(function(d){return parseFloat(d.h2) });
+    var dataFilter = data.map(function(d){return d.h2 });
     var max_h2 = d3.max(dataFilter) * 1.2;
     var max_y = max_h2 > 1 ? 1 : max_h2;
       var y = d3.scaleLinear()
