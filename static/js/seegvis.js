@@ -1,6 +1,47 @@
 // 外部的 js 文件可以使用html中 js 定义的变量、函数等，不同js文件中的函数也可以相互调用！
 var formatNum = (float) => parseFloat(parseFloat(float).toFixed(4));
 var out_height_fun = (n) => n <= 25 ? 24 * n + 200 : 10*(n - 25) + 800; // (n) => 20*n + 250;
+$("#nav-1 a").on("click", function() {
+    var position = $(this)
+        .parent()
+        .position();
+    var width = $(this)
+        .parent()
+        .width();
+    $("#nav-1 .slide1").css({ opacity: 1, left: +position.left, width: width });
+    $(".system_module").css({display: "none"}).eq($(this)[0].name).css({display: "block"});
+});
+
+$("#nav-1 a").on("mouseover", function() {
+    var position = $(this)
+        .parent()
+        .position();
+    var width = $(this)
+        .parent()
+        .width();
+    $("#nav-1 .slide2")
+        .css({
+            opacity: 1,
+            left: +position.left,
+            width: width
+        })
+        .addClass("squeeze");
+});
+
+$("#nav-1 a").on("mouseout", function() {
+    $("#nav-1 .slide2")
+        .css({ opacity: 0 })
+        .removeClass("squeeze");
+});
+
+var currentWidth = $("#nav-1 .system_nav")
+    .find(".active")
+    .parent("li")
+    .width();
+var current = $(".system_nav .active").position();
+$("#nav-1 .slide1").css({ left: +current.left, width: currentWidth });
+
+
 function statisticExceptZero(data) {
     /**
      * 计算除去0后数组的中值、均值、最大值、最小值、数组长度、Q1、Q3
@@ -194,11 +235,14 @@ function showCoordinate(files) {
             pz_p.length = 0;
             niz_p.length = 0;
             //console.log(co_data)
+            two_elect_co.length = 0;
             for(var ii=0;ii<electrode_names.length;ii++){
-                var one_e = electrode_names[ii].split("-")[0];
+                let [one_e,second_e] = electrode_names[ii].split("-");
                 //console.log(one_e)
+                two_elect_co.push(centerPoint(one_elect_co[one_e],one_elect_co[second_e]));
+
                 var flag = true;
-                for (var jj=0;jj<co_data["ez"].length;jj++){
+                for (let jj=0;jj<co_data["ez"].length;jj++){
                     if (co_data["ez"][jj][3].includes(one_e)){
                         ez_p.push(ii);
                         flag = false;

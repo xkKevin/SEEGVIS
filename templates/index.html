@@ -23,349 +23,345 @@
     <script src="/static/js/d3.v4.js"></script>
     <script src="/static/js/d3-scale-chromatic.v1.min.js"></script>
 
-    <script src="/static/js/seegvis.js"></script>
-    <script src="/static/js/visChart.js"></script>
     <link rel="stylesheet" href="/static/css/seegvis.css">
 </head>
 <body>
-<div class="panel-group" id="accordion">
-    <div class="panel panel-default">
-        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-            <h4 class="panel-title">
-                <label>基本信息</label>
-                <span class="badge" id="systemGuide" style="float: right;font-size:18px; margin-right: 50px;cursor: pointer;" title="查看使用说明">系统指南</span>
-            </h4>
-        </div>
-        <div id="collapseOne" class="panel-collapse collapse in">
-            <div class="panel-body">
-                <form method="post" action="/" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {% if not fc_info %}
-                        请上传mat格式文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
-                        <input type="submit" value="提交" class="submit_mat button"/><br>
-                    {% else %}
-                        更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
-                        <input type="submit" value="更改" class="submit_mat button"/><br>
-                    {% endif %}
-                </form>
-                {% if fc_info %}
-                <div style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 15px;margin-top: 10px;">
-                    当前上传的数据文件为：<font color="red">{{ file_name }}</font>
-                </div>
-                <div style="display: inline-block;width: 50%;">
-                    <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 96%">
-                        <tbody>
-                        {% for key,value in fc_info.items %}
-                            <tr class="active">
-                                <td>{{ key }}</td>
-                                {% if key == 'electrode_names' %}
-                                    <td>
-                                    {% for item in value %}
-                                        {{ forloop.counter0 }}:&nbsp;{{ item }};&nbsp;
-                                    {% endfor %}
-                                    </td>
-                                {% else %}
-                                    <td>{{ value }}</td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div style="display: inline-block; width: 48%; vertical-align: top; margin-left: 10px;">
-                    <h3 style="margin-top: 0">控制面板&nbsp;(DashBoard)</h3>
-                    <div style="margin-top: 25px;">
-                        <b>筛选通道：</b>
-                        <select id="select_channels" class="selectpicker" multiple data-live-search="true" data-actions-box="true">
-                            {% for electrode in fc_info.electrode_names %}
-                                <option value="{{ forloop.counter0 }}">{{ electrode }}</option>
-                            {% endfor %}
-                        </select>
-                        <button class="btn btn-primary" onclick="referZone()">参考区域</button>
-                        &nbsp;&nbsp;&nbsp;已选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
-                    </div>
-                    <div style="margin-top: 25px;">
-                        <b>筛选时间：{{ fc_info.start }}</b>&nbsp;&nbsp;&nbsp;&nbsp;
-                        <input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;
-                        {{ fc_info.end }}</b>
-                    </div>
-                    <div style="margin-top: 25px;">
-                        <b>设置阈值：</b>
-                        <input id="h2_threshold" type="text" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
-                    </div>
-                    <div style="margin-top: 25px;">
-                        <b>筛选子波：</b>
-                        <select id="select_wave" class="selectpicker">
-                            <option>Any Wave</option>
-                            <option>Delta</option>
-                            <option>Theta</option>
-                            <option>Alpha</option>
-                            <option>Beta</option>
-                            <option>Gamma</option>
-                            <option>Gamma2</option>
-                            <option>Ripple</option>
-                            <option>Fast Ripple</option>
-                        </select>
-                        &nbsp;&nbsp;<span style="color:red;">筛选子波功能暂未实现！</span>
-                    </div>
-                    <div style="margin-top: 25px;">
-                        <div style="display: inline-block;vertical-align: top; margin-top: 8px;"><b>确定区域：</b></div>
-                        <label style="width:200px;">
-                            <div class="input-group">
-                                <span class="input-group-addon">EZ</span>
-                                <input class="form-control" type="text" id="EZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
-                            </div>
-                        </label>
-                        <label style="width:200px;">
-                            <div class="input-group">
-                                <span class="input-group-addon">PZ</span>
-                                <input class="form-control" type="text" id="PZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
-                            </div>
-                        </label>
-                        <label style="width:200px;">
-                            <div class="input-group">
-                                <span class="input-group-addon">NIZ</span>
-                                <input class="form-control" type="text" id="NIZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
-                            </div>
-                        </label>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <button class="btn btn-default" onclick="assignZone()">参考坐标</button>&nbsp;
-                        <button class="btn btn-success" onclick="select_confirm()">确认选择</button>&nbsp;
-                        <button class="btn btn-warning" onclick="select_reset()">恢复默认</button>&nbsp;&nbsp;
-                        <div id="select_confirm" style="display:inline-block;font-size: larger; text-align: left;"></div>
-                    </div>
-                </div>
-                <div style="margin-top: 20px; text-align: center">
-                    <div>
-                        <label>
-                            <span class="btn btn-primary"> 
-                                读取标记文件<input type="file" accept=".txt,.csv" style="display: none;" multiple onchange="readFromCsv(this,readToArray)">
-                            </span>
-                        </label>
-                        <button class="btn btn-primary" onclick="saveMarks()">保存时间标记</button>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#myModal"
-                                onclick=$("#operate_type").text("新增")>新增时间标记</button>
-                        <button class="btn btn-primary" onclick=$("#time_marks").empty()>清空所有标记</button>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <table class="table table-bordered" align="center" style="width: 72%">
-                            <thead>
-                                <tr>
-                                    <th width="145px;">标记名</th>
-                                    <th width="135px;">起始时间</th>
-                                    <th width="135px;">终止时间</th>
-                                    <th style="min-width: 160px;">描述</th>
-                                    <th width="250px;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="time_marks">
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true" onclick="cancel()">
-                                        &times;
-                                    </button>
-                                    <h4 class="modal-title" id="myModalLabel">
-                                        <span id="operate_type"></span>时间标记
-                                    </h4>
-                                </div>
-                                <div class="modal-body">
-                                    <div style="display: inline-block; width: 34%;">
-                                        <div class="input-group">
-                                            <span class="input-group-addon">标记名</span>
-                                            <input id="add_name" type="text" class="form-control">
-                                        </div>
-                                    </div>
-                                    <div style="display: inline-block; width: 32%;">
-                                        <div class="input-group">
-                                            <span class="input-group-addon">起始时间</span>
-                                            <input id="add_start" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
-                                        </div>
-                                    </div>
-                                    <div style="display: inline-block; width: 32%;">
-                                        <div class="input-group">
-                                            <span class="input-group-addon">终止时间</span>
-                                            <input id="add_end" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
-                                        </div>
-                                    </div>
-                                    <div class="input-group">
-                                        <span class="input-group-addon">描述</span>
-                                        <input id="add_desc" type="text" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-default" data-dismiss="modal" onclick="cancel()">取消</button>
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="operateMarks()">
-                                        确定
-                                    </button>
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal -->
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<div id="nav-1">
+    <ul class="system_nav">
+        <li class="slide1"></li>
+        <li class="slide2"></li>
+        <li class="system_name">SEEGVIS</li>
+        <li><a  name="0" class="active">基本信息</a></li>
+        <li><a name="1" >空间坐标</a></li>
+        <li><a name="2" >折线图</a></li>
+        <li><a name="3" >小提琴图</a></li>
+        <li><a name="4" >OUT 分析</a></li>
+        <li><a name="5" >距离分段分析</a></li>
+        <li style="position: absolute; right: 30px; line-height: 2.75;"><span class="badge" id="systemGuide" title="查看使用说明">系统指南</span></li>
+    </ul>
+</div>
+
+<div style="margin-bottom: 65px;"></div>
+
+<div class="system_module">
+    <form method="post" action="/" enctype="multipart/form-data" style="padding-left: 20px;">
+        {% csrf_token %}
+        {% if not fc_info %}
+            请上传mat格式文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
+            <input type="submit" value="提交" class="submit_mat button"/><br>
+        {% else %}
+            更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
+            <input type="submit" value="更改" class="submit_mat button"/><br>
+        {% endif %}
+    </form>
+    {% if fc_info %}
+    <div style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 15px;margin-top: 10px;">
+        当前上传的数据文件为：<font color="red">{{ file_name }}</font>
     </div>
-    <div class="panel panel-success">
-        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
-            <h4 class="panel-title">
-                <label>空间坐标</label>
-            </h4>
-        </div>
-        <div id="collapseTwo" class="panel-collapse collapse">
-            <div class="panel-body" id="electrodes">
-                请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" class="button"
-                                     onchange="showCoordinate(this.files)"/>
-            </div>
-        </div>
-    </div>
-    <div class="panel panel-info">
-        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
-            <h4 class="panel-title">
-                <label>折线图</label>
-            </h4>
-        </div>
-        <div id="collapseThree" class="panel-collapse collapse">
-            <div class="panel-body">
-                <table>
-                    <tbody>
-                    <tr>
-                        <td style="padding:15px 10px">
-                            <div class="input-group">
-                                <span class="input-group-addon">信号1（S1）：</span>
-                                <input class="form-control" type="text" id="s1">
-                            </div>
-                        </td>
-                        <td style="padding:15px 10px">
-                            <div class="input-group">
-                                <span class="input-group-addon">信号2（S2）：</span>
-                                <input class="form-control" type="text" id="s2">
-                            </div>
-                        </td>
+    <div style="display: inline-block;width: 50%;">
+        <table align="center" class="table tab1 table-bordered" style="text-align: center;max-width: 96%">
+            <tbody>
+            {% for key,value in fc_info.items %}
+                <tr class="active">
+                    <td>{{ key }}</td>
+                    {% if key == 'electrode_names' %}
                         <td>
-                            <label class="btn btn-success" onclick="getH2()">提交</label>
+                        {% for item in value %}
+                            {{ forloop.counter0 }}:&nbsp;{{ item }};&nbsp;
+                        {% endfor %}
                         </td>
+                    {% else %}
+                        <td>{{ value }}</td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="args_control" style="display: inline-block; width: 48%; vertical-align: top; margin-left: 10px;">
+        <h3 style="margin-top: 0">控制面板&nbsp;(DashBoard)</h3>
+        <div style="margin-top: 25px;">
+            <b>筛选通道：</b>
+            <select id="select_channels" class="selectpicker" multiple data-live-search="true" data-actions-box="true">
+                {% for electrode in fc_info.electrode_names %}
+                    <option value="{{ forloop.counter0 }}">{{ electrode }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" onclick="referZone()">参考区域</button>
+            &nbsp;&nbsp;&nbsp;已选择&nbsp;<span id="electrodes_num" style="color:red;"></span>&nbsp;个通道
+        </div>
+        <div style="margin-top: 25px;">
+            <b>筛选时间：{{ fc_info.start }}</b>&nbsp;&nbsp;&nbsp;&nbsp;
+            <input id="time_slider" type="text"/><b>&nbsp;&nbsp;&nbsp;&nbsp;
+            {{ fc_info.end }}</b>
+        </div>
+        <div style="margin-top: 25px;">
+            <b>设置阈值：</b>
+            <input id="h2_threshold" type="text" value="0" maxlength="12" onkeyup="value=value.replace(/[^.\d]/g,'')">
+        </div>
+        <div style="margin-top: 25px;">
+            <b>筛选子波：</b>
+            <select id="select_wave" class="selectpicker">
+                <option>Any Wave</option>
+                <option>Delta</option>
+                <option>Theta</option>
+                <option>Alpha</option>
+                <option>Beta</option>
+                <option>Gamma</option>
+                <option>Gamma2</option>
+                <option>Ripple</option>
+                <option>Fast Ripple</option>
+            </select>
+            &nbsp;&nbsp;<span style="color:red;">筛选子波功能暂未实现！</span>
+        </div>
+        <div style="margin-top: 25px;">
+            <div style="display: inline-block;vertical-align: top; margin-top: 8px;"><b>确定区域：</b></div>
+            <label style="width:200px;">
+                <div class="input-group">
+                    <span class="input-group-addon">EZ</span>
+                    <input class="form-control" type="text" id="EZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
+                </div>
+            </label>
+            <label style="width:200px;">
+                <div class="input-group">
+                    <span class="input-group-addon">PZ</span>
+                    <input class="form-control" type="text" id="PZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
+                </div>
+            </label>
+            <label style="width:200px;">
+                <div class="input-group">
+                    <span class="input-group-addon">NIZ</span>
+                    <input class="form-control" type="text" id="NIZ" onkeyup="value=value.replace(/[^,\- \d]/g,'')">
+                </div>
+            </label>
+        </div>
+        <div style="margin-top:10px;">
+            <button class="btn btn-default" onclick="assignZone()">参考坐标</button>&nbsp;
+            <button class="btn btn-success" onclick="select_confirm()">确认选择</button>&nbsp;
+            <button class="btn btn-warning" onclick="select_reset()">恢复默认</button>&nbsp;&nbsp;
+            <div id="select_confirm" style="display:inline-block;font-size: larger; text-align: left;"></div>
+        </div>
+    </div>
+    <div style="margin-top: 20px; text-align: center">
+        <div>
+            <label>
+                <span class="btn btn-primary"> 
+                    读取标记文件<input type="file" accept=".txt,.csv" style="display: none;" multiple onchange="readFromCsv(this,readToArray)">
+                </span>
+            </label>
+            <button class="btn btn-primary" onclick="saveMarks()">保存时间标记</button>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#myModal"
+                    onclick=$("#operate_type").text("新增")>新增时间标记</button>
+            <button class="btn btn-primary" onclick=$("#time_marks").empty()>清空所有标记</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <table class="table table-bordered" align="center" style="width: 72%">
+                <thead>
+                    <tr>
+                        <th width="145px;">标记名</th>
+                        <th width="135px;">起始时间</th>
+                        <th width="135px;">终止时间</th>
+                        <th style="min-width: 160px;">描述</th>
+                        <th width="250px;">操作</th>
                     </tr>
-                    </tbody>
-                </table>
-                <!-- Create a div where the graph will take place -->
-                <div id="my_dataviz"></div>
-            </div>
+                </thead>
+                <tbody id="time_marks">
+                </tbody>
+            </table>
+        </div>
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" onclick="cancel()">
+                            &times;
+                        </button>
+                        <h4 class="modal-title" id="myModalLabel">
+                            <span id="operate_type"></span>时间标记
+                        </h4>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display: inline-block; width: 34%;">
+                            <div class="input-group">
+                                <span class="input-group-addon">标记名</span>
+                                <input id="add_name" type="text" class="form-control">
+                            </div>
+                        </div>
+                        <div style="display: inline-block; width: 32%;">
+                            <div class="input-group">
+                                <span class="input-group-addon">起始时间</span>
+                                <input id="add_start" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                            </div>
+                        </div>
+                        <div style="display: inline-block; width: 32%;">
+                            <div class="input-group">
+                                <span class="input-group-addon">终止时间</span>
+                                <input id="add_end" type="text" class="form-control" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">描述</span>
+                            <input id="add_desc" type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal" onclick="cancel()">取消</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="operateMarks()">
+                            确定
+                        </button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal -->
         </div>
     </div>
-    <div class="panel panel-warning">
-        <div class="panel-heading"  data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
-            <h4 class="panel-title">
-                <label>小提琴图</label>
-            </h4>
-        </div>
-        <div id="collapseFour" class="panel-collapse collapse">
-            <div class="panel-body">
-                <div id="analyse">
-                    <table style="margin-bottom: 15px;" align="center">
-                        <tbody>
-                        <tr>
-                            <td>
-                                <b style="font-size: larger;">调整小提琴图 bins</b>
-                            </td>
-                            <td style="padding-left: 10px;padding-right: 8px;">
-                                <input id="violin_bins" type="text"/>
-                            </td>
-                            <td style="padding-left: 10px;" title="切换模式：显示点或显示四分位">
-                                <input type="checkbox" id="violin_status" checked>
-                            </td>
-                            <td style="padding-left: 10px;">
-                                <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
-                            </td>
-                            <td style="padding-left: 10px;">
-                                <label class="btn btn-success" onclick="violin_play()">播放</label>
-                            </td>
-                            <td style="padding-left: 10px;">
-                                <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
-                            </td>
-                            <td >
-                                <!-- <a id="fc_result" style="margin-left: 15px;visibility: hidden;" href="/static/data/fc_result.csv">下载FC计算结果</a> -->
-                                <a id="fc_result" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCResult()">下载FC计算结果</a>
-                            </td>
-                             <td >
-                                <a id="fc_result_s" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <!-- Create a div where the graph will take place -->
-                    <div id="violinTimeDiv" style="margin-left: 360px;display: none;">
-                        <label id="lastTime" onclick="last_time()" class="btn-sm btn-default ctlTime" style="visibility: hidden;">上一时刻</label>
-                        &nbsp;当前时间为：<span id="violinTimeSpan" style="color:red;"></span>&nbsp;
-                        <label id="nextTime" onclick="fc_play()" class="btn-sm btn-default ctlTime">下一时刻</label>
-                    </div>
-                    <div id="violinBwt" style="margin-top: -15px;">
-                        <div id="violinLeft" style="width:1000px;float:left; text-align: center;margin-left: 10px;"></div>
-                        <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {% endif %}
+</div>
+
+<div class="system_module"  style="display: none;">
+    <div style="padding-left: 20px;">
+        请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" class="button"
+                             onchange="showCoordinate(this.files)"/>
     </div>
-    <div class="panel panel-danger">
-        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion" href="#collapseFive">
-            <h4 class="panel-title">
-                <label>OUT&nbsp;分析</label>
-            </h4>
-        </div>
-        <div id="collapseFive" class="panel-collapse collapse">
-            <div id="out_result" style="margin-left: 12px; display: none;">
-                OUT LINKS:<br>
-                <span id="out_links"></span><br>
-                IN LINKS:<br>
-                <span id="in_links"></span><br>
-                <a href="/static/data/out_result.xls">下载&nbsp;OUT&nbsp;分析结果</a>
-                <a id="out_result_s" style="margin-left: 20px;visibility: hidden;cursor: pointer;" onclick="downloadOUTStatistic()">下载区域统计结果</a>
-            </div>
-            <div class="panel-body">
-                <table align="center">
-                    <td style="width: 168px;">
-                        <b style="font-size: larger;">当前h2阈值为：<span id="h2_threshold_value" style="color: red">0</span></b>
-                    </td>
-                    <td style="padding-right: 20px;">
-                        <input id="h2_threshold2" class="form-control" type="text"/>
-                    </td>
-                    <td>
-                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT')">OUT</button>
-                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT/IN')">OUT / IN</button>
-                        <button class="btn btn-default" onclick="outAnalyse(this,'OUT-IN')">OUT - IN</button>
-                        <button class="btn btn-default" onclick="outAnalyse(this,'IN')">IN</button>
-                    </td>
-                    <td style="padding-left: 15px;">
-                        <select id="zone_analyse_type" class="selectpicker" data-width="auto">
-                            <option>median</option>
-                            <option>mean</option>
-                            <option>sum</option>
-                            <option>max</option>
-                            <option>min</option>
-                        </select>
-                        <button class="btn btn-warning" onclick="outZoneAnalyse()">区域分析</button>
-                    </td>
-                </table>
-                <div id="out_chart" style="display: none; margin-top: 15px;">
-                    <!--
-                    <div id="out_in_river" style="display: inline-block;height: 500px; width: 58%; min-width: 800px"></div>
-                    <div id="out_in_heat" style="display: inline-block;height: 500px; width: 40%; min-width: 600px"></div>
-                    -->
-                    <div id="out_in_river" style="width: 58%; float: left"></div>
-                    <div id="out_in_heat" style="width: 42%; float: left"></div>
+    <div id="electrodes"></div>
+</div>
+
+<div class="system_module" style="display: none;" align="center">
+    <table>
+        <tbody>
+        <tr>
+            <td style="padding-right: 20px;">
+                <div class="input-group">
+                    <span class="input-group-addon">信号1（S1）</span>
+                    <input class="form-control" type="text" id="s1">
                 </div>
-            </div>
+            </td>
+            <td style="padding-right: 10px">
+                <div class="input-group">
+                    <span class="input-group-addon">信号2（S2）</span>
+                    <input class="form-control" type="text" id="s2">
+                </div>
+            </td>
+            <td>
+                <label class="btn btn-success" onclick="getH2()">提交</label>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz" style="margin-top: 20px;"></div>
+</div>
+
+<div class="system_module"  style="display: none;">
+    <div id="analyse">
+        <table style="margin-bottom: 15px;" align="center">
+            <tbody>
+            <tr>
+                <td>
+                    <b style="font-size: larger;">调整小提琴图 bins</b>
+                </td>
+                <td style="padding-left: 10px;padding-right: 8px;">
+                    <input id="violin_bins" type="text"/>
+                </td>
+                <td style="padding-left: 10px;" title="切换模式：显示点或显示四分位">
+                    <input type="checkbox" id="violin_status" checked>
+                </td>
+                <td style="padding-left: 10px;">
+                    <label class="btn btn-success" onclick="fcAnalyse()">FC分析</label>
+                </td>
+                <td style="padding-left: 10px;">
+                    <label class="btn btn-success" onclick="violin_play()">播放</label>
+                </td>
+                <td style="padding-left: 10px;">
+                    <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
+                </td>
+                <td >
+                    <!-- <a id="fc_result" style="margin-left: 15px;visibility: hidden;" href="/static/data/fc_result.csv">下载FC计算结果</a> -->
+                    <a id="fc_result" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCResult()">下载FC计算结果</a>
+                </td>
+                 <td >
+                    <a id="fc_result_s" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <!-- Create a div where the graph will take place -->
+        <div id="violinTimeDiv" style="margin-left: 360px;display: none;">
+            <label id="lastTime" onclick="last_time()" class="btn-sm btn-default ctlTime" style="visibility: hidden;">上一时刻</label>
+            &nbsp;当前时间为：<span id="violinTimeSpan" style="color:red;"></span>&nbsp;
+            <label id="nextTime" onclick="fc_play()" class="btn-sm btn-default ctlTime">下一时刻</label>
+        </div>
+        <div id="violinBwt" style="margin-top: -15px;">
+            <div id="violinLeft" style="width:1000px;float:left; text-align: center;margin-left: 10px;"></div>
+            <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
         </div>
     </div>
 </div>
+
+<div class="system_module"  style="display: none;">
+    <div id="out_result" style="margin-left: 12px; display: none;">
+        OUT LINKS:<br>
+        <span id="out_links"></span><br>
+        IN LINKS:<br>
+        <span id="in_links"></span><br>
+        <a href="/static/data/out_result.xls">下载&nbsp;OUT&nbsp;分析结果</a>
+        <a id="out_result_s" style="margin-left: 20px;visibility: hidden;cursor: pointer;" onclick="downloadOUTStatistic()">下载区域统计结果</a>
+        <hr style="margin-top: 6px; margin-bottom: 18px;">
+    </div>
+    <table align="center">
+        <td style="width: 168px;">
+            <b style="font-size: larger;">当前h2阈值为：<span id="h2_threshold_value" style="color: red">0</span></b>
+        </td>
+        <td style="padding-right: 20px;">
+            <input id="h2_threshold2" class="form-control" type="text"/>
+        </td>
+        <td>
+            <button class="btn btn-default" onclick="outAnalyse(this,'OUT')">OUT</button>
+            <button class="btn btn-default" onclick="outAnalyse(this,'OUT/IN')">OUT / IN</button>
+            <button class="btn btn-default" onclick="outAnalyse(this,'OUT-IN')">OUT - IN</button>
+            <button class="btn btn-default" onclick="outAnalyse(this,'IN')">IN</button>
+        </td>
+        <td style="padding-left: 15px;">
+            <select id="zone_analyse_type" class="selectpicker" data-width="auto">
+                <option>median</option>
+                <option>mean</option>
+                <option>sum</option>
+                <option>max</option>
+                <option>min</option>
+            </select>
+            <button class="btn btn-warning" onclick="outZoneAnalyse()">区域分析</button>
+        </td>
+    </table>
+    <div id="out_chart" style="display: none; margin-top: 15px;">
+        <!--
+        <div id="out_in_river" style="display: inline-block;height: 500px; width: 58%; min-width: 800px"></div>
+        <div id="out_in_heat" style="display: inline-block;height: 500px; width: 40%; min-width: 600px"></div>
+        -->
+        <div id="out_in_river" style="width: 58%; float: left"></div>
+        <div id="out_in_heat" style="width: 42%; float: left"></div>
+    </div>
+</div>
+
+<div class="system_module"  style="display: none;" align="center">
+    <table>
+        <tbody>
+        <tr>
+            <td style="padding-right: 10px;">
+                <div class="input-group">
+                    <span class="input-group-addon">距离间隔大小（cm）</span>
+                    <input class="form-control" type="text" id="distance_interval" onkeyup="value=value.replace(/[^.\d]/g,'')">
+                </div>
+            <td>
+                <label class="btn btn-success" onclick="distanceAnalyse()">提交</label>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <!-- Create a div where the graph will take place -->
+    <div id="distance_vis" style="margin-top: 20px;"></div>
+</div>
 </body>
+<script src="/static/js/seegvis.js"></script>
+<script src="/static/js/visChart.js"></script>
 <script>
     var fc_info = {{ fc_info | default:"null"|safe }}; // 注意： 冒号后面不能有空格！ 引号中可以是对象，如 :"{xk:12}"
     var init = {{ file_name|default:"null"|safe }};
@@ -375,7 +371,8 @@
         alert(msg);
     }
     var one_elect = new Set(); //电极点名字
-    var one_elect_co = {};
+    var one_elect_co = {};  // C2 的坐标位置，key是电极名，value是该电极的坐标
+    var two_elect_co = [];  // C2-C3 点的坐标位置（数组按照 electrode_names 顺序排列）
     var ez_p=[];  // 存储的是属于ez的电极对的下标，如ez_p=[1,3]; 则说明electrode_names中下标为1,3的电极对属于ez（此信息来自坐标文件）
     var pz_p=[];
     var niz_p=[];
@@ -1001,6 +998,46 @@ function fc_play() {
                 alert(result["msg"])
             }
     });
+}
+
+function distanceAnalyse() {
+    // let startTime = new Date().getTime();
+    if (!init){
+        alert("请先上传.mat数据文件!");
+        return;
+    }
+    /*
+    ez = $("#EZ").val();
+    pz = $("#PZ").val();
+    niz = $("#NIZ").val();
+    */
+    if (!(ez_u.length + pz_u.length + niz_u.length)){
+        alert("您还未在控制面板内确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
+        return;
+    }
+
+    let distance_interval = parseFloat($("#distance_interval").val());
+    alert(distance_interval);
+
+}
+
+function cal_distance_in(signals, zone) {
+    let result = [];
+    for (let si=0; si<signals.length-1;si++){
+        for (let sj=si+1; sj<signals.length;sj++){
+            let sum = 0;
+            for (let i=0;i<3;i++){
+                sum += Math.pow(two_elect_co[si][i]-two_elect_co[sj][i],2);
+            }
+            let distance = Math.sqrt((sum));
+            result.push(zone,[si,sj],distance);
+        }
+    }
+    return result;
+}
+
+function cal_distance_bwt(s1,s2) {
+
 }
 </script>
 </html>

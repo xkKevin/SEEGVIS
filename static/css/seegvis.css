@@ -8,7 +8,7 @@ table.table-bordered th {
     margin-left: 10px;
     margin-right: 10px;
 }
-#collapseOne .slider.slider-horizontal {
+.args_control .slider.slider-horizontal {
     max-width: 600px;
     min-width: 200px;
     width: 65%;
@@ -75,4 +75,78 @@ div.tooltip1 {
     color: orangered;
     width: 400px;
     text-align: center;
+}
+
+#nav-1 {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 3;  <!-- 嵌套等级，数值越大越在上面 -->
+}
+
+#nav-1 .system_nav {
+  position: relative;
+  border: none;
+  display: flex;
+  list-style: none;
+  background: #f5f5f5;
+  padding: 5px;
+}
+#nav-1 .system_nav li {
+  margin: 0;
+}
+#nav-1 .system_nav li a{
+  position: relative;
+  padding: 0.5em 1.1em;
+  font-size: 16px;
+  border: none;
+  color: #333;
+  display: inline-block;
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 3;
+}
+#nav-1 .slide1,
+#nav-1 .slide2 {
+  position: absolute;
+  display: inline-block;
+  height: 37px;
+  border-radius: 20px;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1.05);
+}
+#nav-1 .system_nav .slide1 {
+  background-color: yellowgreen;
+  z-index: 2;
+}
+#nav-1 .system_nav .slide2 {
+  opacity: 0;
+  background: #fff;
+  border: 1px solid #8ab9ff;
+  z-index: 1;
+}
+
+.squeeze {
+  transition: all 1.5s;
+  -webkit-transform: scale(0.9);
+          transform: scale(0.9);
+}
+
+#systemGuide {
+    font-size:17px;
+    cursor: pointer;
+    background-color: dimgrey;
+    line-height: 1.3;
+    letter-spacing: 2px;
+}
+#systemGuide:hover{
+    background-color: hotpink;
+}
+
+.system_name{
+    font-size: large;
+    line-height: 2.3;
+    text-align: center;
+    width: 100px;
+    color:chocolate;
+    cursor:pointer;
 }
