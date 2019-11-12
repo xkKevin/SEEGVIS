@@ -26,4 +26,5 @@ urlpatterns = [
     url(r'^guide/$',views.guide, name="guide"),
     url(r'^ViolinBox/$',views.ViolinBox, name="ViolinBox"),
     url(r'^outAnalyse/$',views.outAnalyse, name="outAnalyse"),
+    url(r'^exitSystem/$',views.exitSystem, name="exitSystem"),
 ]

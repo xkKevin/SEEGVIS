@@ -81,6 +81,7 @@ div.tooltip1 {
     position: fixed;
     width: 100%;
     top: 0;
+    min-width: 900px;
     z-index: 3;  <!-- 嵌套等级，数值越大越在上面 -->
 }
 

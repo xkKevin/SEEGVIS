@@ -25,7 +25,7 @@
 
     <link rel="stylesheet" href="/static/css/seegvis.css">
 </head>
-<body>
+<body style="min-width: 900px;">
 <div id="nav-1">
     <ul class="system_nav">
         <li class="slide1"></li>
@@ -53,6 +53,7 @@
             更改数据文件：<input type="file" accept=".mat" name="up_file" class="file_mat button"/>
             <input type="submit" value="更改" class="submit_mat button"/><br>
         {% endif %}
+        <input type="hidden" value="{{ userid }}" name="userid"/>
     </form>
     {% if fc_info %}
     <div style="font-size: 26px;font-weight: bold;text-align: center;margin-bottom: 15px;margin-top: 10px;">
@@ -366,6 +367,7 @@
     var fc_info = {{ fc_info | default:"null"|safe }}; // 注意： 冒号后面不能有空格！ 引号中可以是对象，如 :"{xk:12}"
     var init = {{ file_name|default:"null"|safe }};
     var msg = {{ msg|default:"null"|safe }};
+    var userid = $("input[name='userid']").val();
     var electrodes_len = 0;  // 可以用来判断是否传入文件
     if(msg){
         alert(msg);
@@ -668,7 +670,7 @@ function getH2() {
         alert("输入信号应小于"+elen+" !");
         return;
     }
-    $.get('{% url 'getH2' %}',{"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
+    $.get('{% url 'getH2' %}',{"userid":userid,"s1":s1,"s2":s2,"select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
         function(result, statue){
             if(result["result"] === true){
                 //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
@@ -722,7 +724,7 @@ function fcAnalyse(){
     //violinTimeDiv.style.display = "none";
     let violinTimeSpan = $("#violinTimeSpan");
 
-    $.post('{% url 'fcAnalyse' %}',{"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),
+    $.post('{% url 'fcAnalyse' %}',{"userid":userid,"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),
             "select_start":select_start,"select_end":select_end,"h2_threshold":h2_threshold},
         function(result, statue){   // ["zone", "electrodes", "h2", "nwd", "wd"]  [ez_in, pz_in, niz_in, ez_pz, ez_niz, pz_niz]
             if(result["result"] === true){
@@ -755,7 +757,7 @@ function outAnalyse(e, type) {
         alert("请先上传.mat数据文件!");
         return;
     }
-    $.get('{% url 'outAnalyse' %}',{"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold, "select_ei":JSON.stringify(select_ei)},
+    $.get('{% url 'outAnalyse' %}',{"userid":userid,"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold, "select_ei":JSON.stringify(select_ei)},
         function(result, statue){
             if(result["result"] === true) {
                 outAnalyseType = type;
@@ -974,7 +976,7 @@ function fc_play() {
     let violinTimeDiv = $("#violinTimeDiv");
     let violinTimeSpan = $("#violinTimeSpan");
 
-    $.post('{% url 'fcAnalyse' %}',{"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),"select_start":play_i,"select_end":play_i,"h2_threshold":h2_threshold},
+    $.post('{% url 'fcAnalyse' %}',{"userid":userid,"ez":JSON.stringify(ez_u),"pz":JSON.stringify(pz_u),"niz":JSON.stringify(niz_u),"select_start":play_i,"select_end":play_i,"h2_threshold":h2_threshold},
         function(result, statue){
             if(result["result"] === true){
                 //h2_max, lag_max, nw_direction, (sp - sn) / (sp + sn)
@@ -1039,5 +1041,15 @@ function cal_distance_in(signals, zone) {
 function cal_distance_bwt(s1,s2) {
 
 }
+
+//监测页面退出事件
+window.onbeforeunload = function() {
+   $.ajax({
+      type: "GET",
+      data: { "userid": userid },
+      url: "{% url 'exitSystem' %}",
+      async: false
+    });
+};
 </script>
 </html>

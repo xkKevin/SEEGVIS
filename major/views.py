@@ -8,28 +8,40 @@ import pandas as pd
 import datetime
 import csv
 # Create your views here.
-
-matData = None
-h2_lag_direction = []  # h2_max, nw_direction, w_direction
-electrode_names = []
-step = None
-start = None
+matDataList = {}  # key为时间戳，value为：{"step", "start", "h2", "lag", "h2_lag_direction", "electrode_names"}  #  h2_lag_direction: [h2_max, nw_direction, w_direction]
 
 def index(request):
     if request.method == "POST":
         try:
+            global matDataList
+            userid = request.POST.get('userid')
+            current_time = datetime.datetime.now()
+
+            if userid == '0' or userid not in matDataList:  # 给分配新的key，同时删除过期的key
+                userid = current_time.strftime('%Y%m%d%H%M%S%f')
+                delete_key = []
+                for key in matDataList.keys():
+                    if (current_time - datetime.datetime.strptime(key, '%Y%m%d%H%M%S%f')).seconds >= 3600:
+                        delete_key.append(key)
+                for key_i in delete_key:
+                    del matDataList[key_i]
+                # return render(request, "index.html", {"msg": json.dumps("会话已过期，请刷新界面或重新上传mat文件！"),"userid": '0'})
+
             file_obj = request.FILES.get("up_file")
-            f1 = open(file_obj.name, "wb")
+
+            file_name = file_obj.name
+            f1 = open(file_name, "wb")
             for i in file_obj.chunks():
                 f1.write(i)
             f1.close()
-            global matData, step, start
-            matData = sio.loadmat(file_obj.name)
+
+            matData = sio.loadmat(file_name)
+            os.remove(file_name)
+
             hour = matData['hour'][0][0]
             minute = matData['minute'][0][0]
             second = matData['second'][0][0]
-            os.remove(file_obj.name)
-            file_name = file_obj.name
+
             filters = list(matData['filters'][0])
             filters = match_wave(filters)
             windowSize = matData['aw_windowSize'][0][0]
@@ -39,37 +51,51 @@ def index(request):
             section_iterations = matData['section_iterations'][0][0]
             end = start + (section_iterations - 1) * step
         except Exception as e:
-            return render(request, "index.html", {"msg": json.dumps(".mat文件读取失败！\n请检查数据是否正确。")})
+            return render(request, "index.html", {"msg": json.dumps(".mat文件读取失败！\n请检查数据是否正确。"),"userid": '0'})
         try:
             # date_time = str(hour) + ':' + str(minute) + ':' + str(second)
             date_time = str(datetime.time(hour, minute, second))
         except Exception as e:
             date_time = str(hour) + ':' + str(minute) + ':' + str(second)
-        global electrode_names
-        electrode_names.clear()
+
+        electrode_names = []
         for i in matData['electrode_names'][0]:
             electrode_names.append(i[0])
         fc_info = {"electrode_names": electrode_names,"filters": filters,"time": date_time, "windowSize": windowSize,
                    "step": step, "maxLag": maxLag, "start": start, "end":end, "section_iterations": section_iterations}
 
-        # all_h2_max_direction(matData['aw_h2'], matData['aw_lag'],0, section_iterations)  fc分析的时候才计算
-        # links = out_in(matData['aw_h2'], matData['aw_lag']) # [out_links,in_links]
-        return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name)})
-    return render(request, "index.html")
+        # {"step", "start", "h2", "lag", "time", "h2_lag_direction", "electrode_names"}
+        matDataList[userid] = {}
+        matDataList[userid]["step"] = step
+        matDataList[userid]["start"] = start
+        matDataList[userid]["h2"] = matData['aw_h2']
+        matDataList[userid]["lag"] = matData['aw_lag']
+        matDataList[userid]["time"] = current_time
+        matDataList[userid]["electrode_names"] = electrode_names
+
+        return render(request, "index.html", {"fc_info": fc_info, "file_name": json.dumps(file_name), "userid": userid})
+    return render(request, "index.html", {"userid": '0'})
 
 
 def getH2(request):
-    global start, step
     if request.method == "GET":
         try:
             s1 = int(request.GET.get('s1'))
             s2 = int(request.GET.get('s2'))
+            userid = request.GET.get('userid')
             h2_threshold = float(request.GET.get('h2_threshold'))
             select_start = float(request.GET.get('select_start'))
             select_end = float(request.GET.get('select_end'))
+
+            global matDataList
+            if userid not in matDataList:
+                return JsonResponse({'result': False, "msg": "会话已过期，请刷新界面或重新上传mat文件！"})
+            start = matDataList[userid]["start"]
+            step = matDataList[userid]["step"]
+
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            s1_s2 = h2_max_direction(s1, s2, select_s, select_l, h2_threshold)
+            s1_s2 = h2_max_direction(userid, s1, s2, select_s, select_l, h2_threshold)
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
         return JsonResponse({'result': True, 's1_s2': s1_s2})
@@ -84,11 +110,14 @@ def fcAnalyse(request):
     '''
     if request.method == "POST":
         try:
-            global start, step
             ez = json.loads(request.POST.get('ez'))
             pz = json.loads(request.POST.get('pz'))
             niz = json.loads(request.POST.get('niz'))
-
+            userid = request.POST.get('userid')
+            global matDataList
+            if userid not in matDataList:
+                return JsonResponse({'result': False, "msg": "会话已过期，请刷新界面或重新上传mat文件！"})
+            start, step = matDataList[userid]['start'], matDataList[userid]['step']
             # zone_e = np.r_[ez, pz, niz]  此方法如果某个子数组为空，则最后的结果会变成浮点数类型，eg np.r_[[], [1,2]] 会得到 [1.0,2.0]
             zone_e = []
             for i in ez:
@@ -105,15 +134,15 @@ def fcAnalyse(request):
             select_end = float(request.POST.get('select_end'))
             select_s = int((select_start - start) / step)  # 筛选的起始时间下标
             select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
-            zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold)
+            zone_h2_max_direction(userid, zone_e, select_s, select_l, h2_threshold)
 
             # fileHeader = ["zone", "electrodes", "h2", "nwd", "wd"]
-            ez_in = cal_fc_in(ez,0,elec_len,"ez")
-            pz_in = cal_fc_in(pz,len(ez),elec_len,"pz")
-            niz_in = cal_fc_in(niz,len(ez)+len(pz),elec_len,"niz")
-            ez_pz = cal_fc_bwt(ez,0,pz,len(ez),elec_len,"ez_pz")
-            ez_niz = cal_fc_bwt(ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
-            pz_niz = cal_fc_bwt(pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
+            ez_in = cal_fc_in(userid,ez,0,elec_len,"ez")
+            pz_in = cal_fc_in(userid,pz,len(ez),elec_len,"pz")
+            niz_in = cal_fc_in(userid,niz,len(ez)+len(pz),elec_len,"niz")
+            ez_pz = cal_fc_bwt(userid,ez,0,pz,len(ez),elec_len,"ez_pz")
+            ez_niz = cal_fc_bwt(userid,ez,0,niz,len(ez)+len(pz),elec_len,"ez_niz")
+            pz_niz = cal_fc_bwt(userid,pz,len(ez),niz,len(ez)+len(pz),elec_len,"pz_niz")
 
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
@@ -124,23 +153,27 @@ def fcAnalyse(request):
 
 
 def outAnalyse(request):
-    global start, step
     if request.method == "GET":
         try:
             select_start = float(request.GET.get('select_start'))
             select_end = float(request.GET.get('select_end'))
             h2_threshold = float(request.GET.get('h2_threshold'))
+            userid = request.GET.get('userid')
+            global matDataList
+            if userid not in matDataList:
+                return JsonResponse({'result': False, "msg": "会话已过期，请刷新界面或重新上传mat文件！"})
+            start, step = matDataList[userid]['start'], matDataList[userid]['step']
             select_ei = json.loads(request.GET.get('select_ei'))  # 将字符串格式转化为json对象
             select_s = int((select_start - start)/step)  # 筛选的起始时间下标
             select_l = int((select_end - start)/step) - select_s + 1  # 筛选的总长度
-            links = out_in(select_s, select_l, h2_threshold, select_ei)  # [out_links, in_links]
+            links = out_in(userid, select_s, select_l, h2_threshold, select_ei)  # [out_links, in_links]
         except Exception as e:
             return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
         return JsonResponse({'result': True, 'out_links': links[0], "in_links": links[1]})
     return JsonResponse({'result': False, 'msg': "Not GET Request!"})
 
 
-def cal_fc_in(signals, offset, n, zone):
+def cal_fc_in(userid, signals, offset, n, zone):
     '''
     计算区域内FC
     :param：signals为数组，如[0,2,3]，offset表示该组signals在zone_e下的偏移量，n表示zone_e电极数，zone表示：ez,pz,niz
@@ -148,7 +181,9 @@ def cal_fc_in(signals, offset, n, zone):
     '''
     result = []
     slen = len(signals)
-    global h2_lag_direction
+    global matDataList
+    h2_lag_direction = matDataList[userid]['h2_lag_direction']
+    electrode_names = matDataList[userid]['electrode_names']
     for i in range(slen - 1):
         for j in range(i+1,slen):
             tmp = [zone,str(electrode_names[signals[i]])+"--"+str(electrode_names[signals[j]])]   # 需要电极在总电极点的下标 signals[i]
@@ -157,14 +192,16 @@ def cal_fc_in(signals, offset, n, zone):
     return result
 
 
-def cal_fc_bwt(s1,offset1,s2,offset2,n,zone):
+def cal_fc_bwt(userid, s1,offset1,s2,offset2,n,zone):
     '''
     计算区域内FC
     :param：s1,s2均为数组，如[0,2,3]，n表示总电极数，zone表示：ez_pz,ez_niz,pz_niz
     :return：如果s1或s2为空数组，则该函数也返回空数组；返回格式例如：["ez_pz","C5-C6--C7-C8",h2,lag,nwd,wd]
     '''
     result = []
-    global h2_lag_direction
+    global matDataList
+    h2_lag_direction = matDataList[userid]['h2_lag_direction']
+    electrode_names = matDataList[userid]['electrode_names']
     # for i in s1:
     #     for j in s2:
     for i in range(len(s1)):
@@ -187,7 +224,7 @@ def position(s1,s2,n):
     return p+s2-s1-1
 
 
-def h2_max_direction(s1, s2, select_s, select_l, h2_threshold):
+def h2_max_direction(userid, s1, s2, select_s, select_l, h2_threshold):
     '''
     s1,s2代表数字，如 0,3
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
@@ -195,9 +232,9 @@ def h2_max_direction(s1, s2, select_s, select_l, h2_threshold):
     以及两信号的不加权方向及加权方向
     '''
     # pnum = h2.shape[2]  # 时间点的数量
-    global matData
-    h2 = matData['aw_h2']
-    lag = matData['aw_lag']
+    global matDataList
+    h2 = matDataList[userid]["h2"]
+    lag = matDataList[userid]["lag"]
     h2_max = [None] * select_l
     lag_max = [None] * select_l
 
@@ -275,19 +312,20 @@ def h2_max_direction(s1, s2, select_s, select_l, h2_threshold):
            [median_p,mean_p,max_p,min_p], [median_n,mean_n,max_n,min_n]#, [lp, ln]
 
 
-def zone_h2_max_direction(zone_e, select_s, select_l, h2_threshold):
+def zone_h2_max_direction(userid, zone_e, select_s, select_l, h2_threshold):
     '''
         zone_e：是区域总电极集合：ez,pz,niz
     '''
     enum = len(zone_e)  # 区域总电极点的数量
-    global h2_lag_direction  # h2_max, nw_direction, w_direction
-    h2_lag_direction.clear()
+    global matDataList  # h2_max, nw_direction, w_direction
+    h2_lag_direction = []
     for ei1 in range(enum - 1):
         for ei2 in range(ei1 + 1, enum):
-            h2_lag_direction.append(h2_max_direction_forFC(zone_e[ei1], zone_e[ei2], select_s, select_l, h2_threshold))
+            h2_lag_direction.append(h2_max_direction_forFC(userid, zone_e[ei1], zone_e[ei2], select_s, select_l, h2_threshold))
+    matDataList[userid]["h2_lag_direction"] = h2_lag_direction
 
 
-def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
+def h2_max_direction_forFC(userid, s1, s2, select_s, select_l, h2_threshold):
     '''
     s1,s2代表数字，如 0,3
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
@@ -295,9 +333,9 @@ def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
     以及两信号的不加权方向及加权方向
     '''
     # pnum = h2.shape[2]  # 时间点的数量
-    global matData
-    h2 = matData['aw_h2']
-    lag = matData['aw_lag']
+    global matDataList
+    h2 = matDataList[userid]["h2"]
+    lag = matDataList[userid]["lag"]
     h2_max = [None] * select_l
     # lag_max = [None] * select_l
 
@@ -344,15 +382,15 @@ def h2_max_direction_forFC(s1, s2, select_s, select_l, h2_threshold):
     return h2_max, nw_direction, w_direction
 
 
-def out_in(select_s, select_l, h2_threshold, select_ei):
+def out_in(userid, select_s, select_l, h2_threshold, select_ei):
     '''
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
     select_ei：表示所选电极（通道）下标数组
     返回每一个节点在筛选的时间内的out与in links值
     '''
-    global matData
-    h2 = matData['aw_h2']
-    lag = matData['aw_lag']
+    global matDataList
+    h2 = matDataList[userid]["h2"]
+    lag = matDataList[userid]["lag"]
     enum = len(select_ei)  # 所选电极点的数量
     # tnum = h2.shape[2] 时间点的数量
     out_links = [[0] * enum for i in range(select_l)]  # (p,e)每一个时间窗口(p)每一个电极点(e)的出链数  [[0] * enum] * select_l 错误写法
@@ -378,7 +416,7 @@ def out_in(select_s, select_l, h2_threshold, select_ei):
                             in_links[select_i][ei1] += 1
                             out_links[select_i][ei2] += 1
 
-    global electrode_names, start, step
+    electrode_names, start, step = matDataList[userid]['electrode_names'], matDataList[userid]['start'], matDataList[userid]['step']
     data = pd.DataFrame(np.c_[out_links,in_links], index=[start + step * i for i in range(select_s, select_s + select_l)],
                         columns=[np.r_[['OUT'] * enum, ['IN'] * enum],[electrode_names[i] for i in select_ei] * 2])
     data.to_excel("static/data/out_result.xls")
@@ -444,3 +482,14 @@ def guide(request):
 
 def ViolinBox(request):
     return render(request, "ViolinBoxPlot.html")
+
+
+def exitSystem(request):
+    if request.method == "GET":
+        userid = request.GET.get("userid")
+        global matDataList
+        if userid in matDataList:
+            del matDataList[userid]
+            # print(matDataList.keys())
+        return JsonResponse({"result": "True"})
+    return JsonResponse({"result": "False"})
