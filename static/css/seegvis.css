@@ -151,3 +151,8 @@ div.tooltip1 {
     color:chocolate;
     cursor:pointer;
 }
+
+.distance_vis_div{
+    display: inline-block;
+    width: 500px;
+}

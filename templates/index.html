@@ -35,8 +35,8 @@
         <li><a name="1" >空间坐标</a></li>
         <li><a name="2" >折线图</a></li>
         <li><a name="3" >小提琴图</a></li>
-        <li><a name="4" >OUT 分析</a></li>
-        <li><a name="5" >距离分段分析</a></li>
+        <li><a name="4" >距离分段分析</a></li>
+        <li><a name="5" >OUT 分析</a></li>
         <li style="position: absolute; right: 30px; line-height: 2.75;"><span class="badge" id="systemGuide" title="查看使用说明">系统指南</span></li>
     </ul>
 </div>
@@ -276,10 +276,9 @@
                     <label class="btn btn-success" onclick="violin_pause(this)" id="play_pause">暂停</label>
                 </td>
                 <td >
-                    <!-- <a id="fc_result" style="margin-left: 15px;visibility: hidden;" href="/static/data/fc_result.csv">下载FC计算结果</a> -->
                     <a id="fc_result" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCResult()">下载FC计算结果</a>
                 </td>
-                 <td >
+                <td >
                     <a id="fc_result_s" style="margin-left: 15px;visibility: hidden;cursor: pointer;" onclick="downloadFCStatistic()">下载FC统计结果</a>
                 </td>
             </tr>
@@ -296,6 +295,44 @@
             <div id="violinRight" style="width:300px;float:left; text-align: center;"></div>
         </div>
     </div>
+</div>
+
+<div class="system_module"  style="display: none;" align="center">
+    <table>
+        <tbody>
+        <tr>
+            <td>
+                <b style="font-size: larger;">调整小提琴图 bins</b>
+            </td>
+            <td style="padding-left: 10px;padding-right: 8px;">
+                <input id="violin_bins2" type="text"/>
+            </td>
+            <td style="padding-left: 10px;" title="切换模式：显示点或显示四分位">
+                <input type="checkbox" id="violin_status2" checked>
+            </td>
+            <td style="padding-left: 10px;">
+                <div class="input-group">
+{#                    <span class="input-group-addon">距离间隔大小（cm）</span>#}
+                    <input class="form-control" type="text" id="distance_interval" onkeyup="value=value.replace(/[^.\d]/g,'')" placeholder="请输入距离间隔（cm）" style="width: 165px;">
+                    <label class="input-group-addon btn btn-success" onclick="distanceAnalyse()">提交</label>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div id="distance_hide_div" style="display: none;margin-top: 20px;">
+        分析类型：
+        <span>
+            <button id = "distance_vis_default" class="btn btn-default distance_button" onclick="distanceChartbyType(this,2)">H2</button>
+            <button class="btn btn-default distance_button" onclick="distanceChartbyType(this,3)">NWD</button>
+            <button class="btn btn-default distance_button" onclick="distanceChartbyType(this,4)">WD</button>
+        </span>
+        <a style="margin-left: 10px;cursor: pointer;" onclick="downloadDistanceResult()">下载计算结果</a>
+        <a style="margin-left: 15px;cursor: pointer;" onclick="downloadDistanceStatistic()">下载统计结果</a>
+
+    </div>
+    <!-- Create a div where the graph will take place -->
+    <div id="distance_vis" style="margin-top: 20px;"></div>
 </div>
 
 <div class="system_module"  style="display: none;">
@@ -342,24 +379,6 @@
     </div>
 </div>
 
-<div class="system_module"  style="display: none;" align="center">
-    <table>
-        <tbody>
-        <tr>
-            <td style="padding-right: 10px;">
-                <div class="input-group">
-                    <span class="input-group-addon">距离间隔大小（cm）</span>
-                    <input class="form-control" type="text" id="distance_interval" onkeyup="value=value.replace(/[^.\d]/g,'')">
-                </div>
-            <td>
-                <label class="btn btn-success" onclick="distanceAnalyse()">提交</label>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-    <!-- Create a div where the graph will take place -->
-    <div id="distance_vis" style="margin-top: 20px;"></div>
-</div>
 </body>
 <script src="/static/js/seegvis.js"></script>
 <script src="/static/js/visChart.js"></script>
@@ -393,9 +412,13 @@
     .attr("class", "tooltip1").style("text-align","left")
     .style("opacity", 0).style("width","96px").style("height","83px"); // 68px
 
-    var div3 = d3.select("body").append("div")  // 小提琴图的点tooltip
+    var div3 = d3.select("body").append("div")  // FC小提琴图的点tooltip
     .attr("class", "tooltip1")  //area
     .style("opacity", 0).style("width","60px").style("height","20px");
+
+    var div4 = d3.select("body").append("div")  // 距离分析小提琴图的点tooltip
+    .attr("class", "tooltip1")  //area
+    .style("opacity", 0).style("width","90px").style("height","38px");
 
     var show_type_direction = 0; // 3 表示 "nwd" 4 表示 "wd"
 
@@ -450,6 +473,47 @@
               console.log("关闭");
              }
          */
+        }
+    });
+
+    var violin_bins_slider2 = new Slider("#violin_bins2", {
+        min: 1,
+        max: 20,
+        step: 1,
+        value: 10
+    });
+    violin_bins_slider2.on("change", function (val) {  // 不能用slide，因为slide 是指拖动，不是改变
+        if (Object.keys(distance_group).length > 0){
+            let type = 2;
+            for (i of $(".distance_button")) {
+                if (i.className.includes("warning")) {
+                    distanceChartbyType(i,type);
+                    break;
+                }
+                type ++;
+            }
+        }
+    });
+
+    $('#violin_status2').bootstrapSwitch({    //初始化按钮
+        onText:"Yes",
+        offText:"No",
+        labelText: "Show Points",
+        labelWidth: 80,
+        onColor:"success",
+        offColor:"warning",
+        // size:"small",
+        onSwitchChange:function(event,state){
+            if (Object.keys(distance_group).length > 0){
+                let type = 2;
+                for (i of $(".distance_button")) {
+                    if (i.className.includes("warning")) {
+                        distanceChartbyType(i,type);
+                        break;
+                    }
+                    type ++;
+                }
+            }
         }
     });
 
@@ -1001,25 +1065,56 @@ function fc_play() {
             }
     });
 }
-
+var distance_group = {}; // {} 0: ["zone", "electrodes", "h2", "nwd", "wd", "distance"]
+var distance_group_static = {}; // {0: {"EZ": [中值、均值、最大值、最小值、数组长度、Q1、Q3]}}
+var distance_interval = NaN;
 function distanceAnalyse() {
     // let startTime = new Date().getTime();
     if (!init){
         alert("请先上传.mat数据文件!");
         return;
     }
-    /*
-    ez = $("#EZ").val();
-    pz = $("#PZ").val();
-    niz = $("#NIZ").val();
-    */
+    if (one_elect.size === 0){
+        alert("您未上传空间坐标文件，无法进行距离分段分析！");
+        return;
+    }
     if (!(ez_u.length + pz_u.length + niz_u.length)){
         alert("您还未在控制面板内确定区域！(EZ、PZ、NIZ不一定要全部输入）\n请用数字表示，格式应如：0-2,4");
         return;
     }
 
-    let distance_interval = parseFloat($("#distance_interval").val());
-    alert(distance_interval);
+    distance_interval = parseFloat($("#distance_interval").val());
+    if (isNaN(distance_interval)){
+        alert("请输入距离间隔！");
+        return;
+    }
+    let elects_distance = cal_distance_in(ez_u, "EZ").concat(cal_distance_in(pz_u, "PZ")).concat(cal_distance_in(niz_u, "NIZ")).
+        concat(cal_distance_bwt(ez_u,pz_u,"EZ_PZ")).concat(cal_distance_bwt(ez_u,niz_u,"EZ_NIZ")).concat(cal_distance_bwt(pz_u,niz_u,"PZ_NIZ"));
+    $.post('{% url 'distanceAnalyse' %}',{"userid":userid,"elects_distance":JSON.stringify(elects_distance),
+            "distance_interval":distance_interval,"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},
+        function(result, statue){
+            if(result["result"] === true){
+                distance_group = result["distance_group"];  // ["zone", "electrodes", "h2", "nwd", "wd", "distance"]
+                // $(".distance_button").removeAttr("disabled");
+                distanceChartbyType($("#distance_vis_default")[0], 2);
+                $("#distance_hide_div").css("display","block");
+            }else {
+                alert(result["msg"])
+            }
+    });
+}
+
+function distanceChartbyType(e, type) { // type：2, 3, 4
+    $(e).siblings().removeClass("btn-warning").addClass("btn-default");
+    $(e).removeClass("btn-default").addClass("btn-warning");
+    let distance_vis = d3.select("#distance_vis");
+    distance_vis.selectAll("*").remove();
+    distance_group_static = {};
+
+    Object.keys(distance_group).forEach(function(key){
+        let distance_vis_div = distance_vis.append("div").attr("class","distance_vis_div");
+        distanceViolin(distance_vis_div,type,parseInt(key),distance_interval);
+    });
 
 }
 
@@ -1029,17 +1124,28 @@ function cal_distance_in(signals, zone) {
         for (let sj=si+1; sj<signals.length;sj++){
             let sum = 0;
             for (let i=0;i<3;i++){
-                sum += Math.pow(two_elect_co[si][i]-two_elect_co[sj][i],2);
+                sum += Math.pow(two_elect_co[signals[si]][i]-two_elect_co[signals[sj]][i],2);
             }
             let distance = Math.sqrt((sum));
-            result.push(zone,[si,sj],distance);
+            result.push([zone,[signals[si],signals[sj]],distance]);
         }
     }
     return result;
 }
 
-function cal_distance_bwt(s1,s2) {
-
+function cal_distance_bwt(s1,s2,zone) {
+    let result = [];
+    for (let si=0; si<s1.length;si++){
+        for (let sj=0; sj<s2.length;sj++){
+            let sum = 0;
+            for (let i=0;i<3;i++){
+                sum += Math.pow(two_elect_co[s1[si]][i]-two_elect_co[s2[sj]][i],2);
+            }
+            let distance = Math.sqrt((sum));
+            result.push([zone,[s1[si],s2[sj]],distance]);
+        }
+    }
+    return result;
 }
 
 //监测页面退出事件

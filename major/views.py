@@ -152,6 +152,45 @@ def fcAnalyse(request):
     return JsonResponse({'result': False, 'msg': "Not POST Request!"})
 
 
+def distanceAnalyse(request):
+    '''
+    等距分析，POST 请求所带参数为：在用户设定的h2阈值、起始时间、终止时间内
+    :param request:
+    :return: 返回 每个 距离区间 内的 ["zone", "electrodes", "h2", "nwd", "wd", "distance"]
+    '''
+    if request.method == "POST":
+        try:
+            userid = request.POST.get('userid')
+            global matDataList
+            if userid not in matDataList:
+                return JsonResponse({'result': False, "msg": "会话已过期，请刷新界面或重新上传mat文件！"})
+            start, step = matDataList[userid]['start'], matDataList[userid]['step']
+
+            distance_interval = float(request.POST.get('distance_interval'))
+            elects_distance = json.loads(request.POST.get('elects_distance'))  # [zone,[s1,s2],distance]
+            h2_threshold = float(request.POST.get('h2_threshold'))
+            select_start = float(request.POST.get('select_start'))
+            select_end = float(request.POST.get('select_end'))
+            select_s = int((select_start - start) / step)  # 筛选的起始时间下标
+            select_l = int((select_end - start) / step) - select_s + 1  # 筛选的总长度
+
+            electrode_names = matDataList[userid]['electrode_names']
+            distance_group = {}
+            for ei in elects_distance:
+                electrodes = str(electrode_names[ei[1][0]]) + "--" + str(electrode_names[ei[1][1]])
+                [h2, nwd, wd] = h2_max_direction_forFC(userid, ei[1][0], ei[1][1], select_s, select_l, h2_threshold, median=True)  # h2_max, nw_direction, w_direction
+                distance_key = int(ei[2]//distance_interval)
+                if distance_key not in distance_group:
+                    distance_group[distance_key] = []
+                distance_group[distance_key].append([ei[0], electrodes, h2, nwd, wd, ei[2]])
+
+        except Exception as e:
+            return JsonResponse({'result': False, 'msg': "系统出错！\n" + repr(e)})
+
+        return JsonResponse({'result': True, 'distance_group': distance_group})
+    return JsonResponse({'result': False, 'msg': "Not POST Request!"})
+
+
 def outAnalyse(request):
     if request.method == "GET":
         try:
@@ -325,7 +364,7 @@ def zone_h2_max_direction(userid, zone_e, select_s, select_l, h2_threshold):
     matDataList[userid]["h2_lag_direction"] = h2_lag_direction
 
 
-def h2_max_direction_forFC(userid, s1, s2, select_s, select_l, h2_threshold):
+def h2_max_direction_forFC(userid, s1, s2, select_s, select_l, h2_threshold, median=False):
     '''
     s1,s2代表数字，如 0,3
     select_s：筛选的起始时间下标；select_l：筛选的总长度（个数）
@@ -379,6 +418,9 @@ def h2_max_direction_forFC(userid, s1, s2, select_s, select_l, h2_threshold):
         w_direction = 0
     else:
         w_direction = (sp - sn) / (sp + sn)
+
+    if median:
+        return np.median(h2_max), nw_direction, w_direction
     return h2_max, nw_direction, w_direction
 
 

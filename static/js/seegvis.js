@@ -486,9 +486,34 @@ function downloadFCResult() {
     exportToCsv("FC_Result.csv",rows.concat(download_FC_data));
 }
 
+function downloadDistanceResult() {
+    let rows = [["distance interval","zone", "electrodes", "h2", "nwd", "wd", "distance"]];
+    Object.keys(distance_group).forEach(function(key){
+        let dis_i = parseInt(key);
+        let di_str = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval);
+        rows = rows.concat([di_str].concat(distance_group[key]));
+    });
+    exportToCsv("Distance_Result.csv",rows);
+}
+
+function downloadDistanceStatistic() {
+    // distance_group_static {0: {"EZ": [中值、均值、最大值、最小值、数组长度、Q1、Q3]}}
+    let rows=[["distance interval","zone","median","mean","max","min","num", "Q1", "Q2"]];
+    Object.keys(distance_group_static).forEach(function(key){
+        let dis_i = parseInt(key);
+        let di_str = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval);
+        if (distance_group_static[key].EZ) rows.push([di_str,"ez"].concat(distance_group_static[key].EZ));
+        if (distance_group_static[key].PZ) rows.push([di_str,"pz"].concat(distance_group_static[key].PZ));
+        if (distance_group_static[key].NIZ) rows.push([di_str,"niz"].concat(distance_group_static[key].NIZ));
+        if (distance_group_static[key].EZ_PZ) rows.push([di_str,"ez_pz"].concat(distance_group_static[key].EZ_PZ));
+        if (distance_group_static[key].EZ_NIZ) rows.push([di_str,"ez_niz"].concat(distance_group_static[key].EZ_NIZ));
+        if (distance_group_static[key].PZ_NIZ) rows.push([di_str,"pz_niz"].concat(distance_group_static[key].PZ_NIZ));
+    });
+    exportToCsv("DistanceStatisticResult.csv",rows);
+}
+
 function downloadFCStatistic() {
-    let rows=[];
-    rows.push(["type","zone","median","mean","max","min","num", "Q1", "Q2"]);  // 中值、均值、最大值、最小值、数组长度、Q1、Q3
+    let rows=[["type","zone","median","mean","max","min","num", "Q1", "Q2"]]; // 中值、均值、最大值、最小值、数组长度、Q1、Q3
     if (databyType.ez) rows.push(["h2","ez"].concat(databyType.ez));
     if (databyType.pz) rows.push(["h2","pz"].concat(databyType.pz));
     if (databyType.niz) rows.push(["h2","niz"].concat(databyType.niz));

@@ -409,7 +409,6 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo,statistic) {
     }
 }
 
-
 function violinBwt() {
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 60, bottom: 30, left: 50},
@@ -654,7 +653,8 @@ function violinBwt() {
         });
 }
 
-function directionality(type) {  // 3 表示 "nwd" 4 表示 "wd"
+function directionality(type) {
+    // 3 表示 "nwd" 4 表示 "wd"
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 60, bottom: 30, left: 50},
         width = 1000 - margin.left - margin.right,
@@ -1011,6 +1011,221 @@ function subviolinFC(data,zone,electrodes) {
                 .duration(500)
                 .style("opacity", 0);
             });
+}
+
+function distanceViolin(div_vis,type,dis_i,distance_interval){
+    // distance_vis 是一个div jQuery对象，用来存放小提琴图，type：2, 3, 4，dis_i：表示距离范围，如1
+    // distance_group {} : [["zone", "electrodes", "h2", "nwd", "wd", "distance"]]
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 20, bottom: 30, left: 50},
+        width = 500 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+    let title = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval) + " cm";
+
+    div_vis.append("h4")
+        .html(title)
+        .style("width","500px")
+        .attr("align","center");
+    var svg = div_vis
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+
+    let dataFilter = distance_group[dis_i].map(function(d){return d[type] });
+    let data_max = d3.max(dataFilter) * 1.2;
+    let max_y = data_max > 1 ? 1 : data_max;
+    let data_min = d3.min(dataFilter);
+    let min_y = data_min >= 0 ? 0 : data_min * 1.2 < -1 ? -1 : data_min * 1.2;
+
+      var y = d3.scaleLinear()
+        .domain([min_y, max_y])          // Note that here the Y scale is set manually
+        .range([height, 0]);
+      svg.append("g").call( d3.axisLeft(y) );
+
+      // Build and Show the X scale. It is a band scale like for a boxplot: each group has an dedicated RANGE on the axis. This range has a length of x.bandwidth
+      var x = d3.scaleBand()
+        .range([ 0, width ])
+        .domain(["EZ", "PZ", "NIZ","EZ_PZ","EZ_NIZ","PZ_NIZ"])
+        .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
+      svg.append("g")
+          .attr("class","axis_violin")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+      // Features of the histogram
+      var histogram = d3.histogram()
+            .domain(y.domain())
+            .thresholds(y.ticks(violin_bins_slider2.getValue()))    // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+            .value(d => d);
+
+      // Compute the binning for each group of the dataset
+      var sumstat = d3.nest()  // nest function allows to group the calculation per level of a factor:分层地分组数组元素。
+        .key(function(d) { return d[0];})
+        .rollup(function(d) {   // For each key..
+          input = d.map(function(g) { return g[type];});    // Keep the variable called Sepal_Length
+          bins = histogram(input);   // And compute the binning on it.
+          return(bins)
+        })
+        .entries(distance_group[dis_i]); //返回一组键-值元组（其实就是一个字典）
+      // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
+      var maxNum = 0;
+      for (i in sumstat ){
+        allBins = sumstat[i].value;
+        lengths = allBins.map(function(a){return a.length;});
+        longuest = d3.max(lengths);
+        if (longuest > maxNum) { maxNum = longuest }
+      }
+      // The maximum width of a violin must be x.bandwidth = the width dedicated to a group
+      var xNum = d3.scaleLinear()
+        .range([0, x.bandwidth()])
+        .domain([-maxNum,maxNum]);
+
+      // Color scale for dots
+      var myColor = d3.scaleSequential()
+        .interpolator(d3.interpolateInferno)
+        .domain([-1,1]);
+      var myColorViolin = d3.scaleOrdinal()
+        .domain(d3.range(0,6))  //  x.domain()获取x定义域的值
+        .range(d3.schemeSet2);
+      var count=0;
+      let distanceStatisticByType={};
+      let myViolinDistance = svg.selectAll("myViolinDistance")
+        .data(sumstat)
+        .enter()        // So now we are working group per group
+        .append("g")
+          .attr("transform", function(d){
+              var pdata = [];
+              for (var i=0;i<d.value.length;i++){
+                  for (var j=0;j<d.value[i].length;j++){
+                      pdata.push(d.value[i][j]);
+                  }
+              }
+              pdata.sort((a,b)=>a-b);  // 一定要注意，排序是按照字符串首字母来的！！！！！！      中值、均值、最大值、最小值、数组长度、Q1、Q3
+              distanceStatisticByType[d.key] = [d3.quantile(pdata,0.5),d3.mean(pdata),pdata[pdata.length - 1],pdata[0],pdata.length,d3.quantile(pdata,0.25),d3.quantile(pdata,0.75)];
+              return("translate(" + x(d.key) +" ,0)")
+          } ) // Translation on the right to be at the group position
+        .on("mouseout", function (d) {
+            div2.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+      distance_group_static[dis_i] = distanceStatisticByType;
+      if($('#violin_status2').bootstrapSwitch("state")) {
+            myViolinDistance.on("mouseover", function (d) {
+                      //sessionStorage.setItem("dvalue",d.value);
+                    div2.transition()
+                        .duration(300)
+                        .style("opacity", .9);
+                    div2.html("中值："+formatNum(distanceStatisticByType[d.key][0])+
+                        "<br>均值："+formatNum(distanceStatisticByType[d.key][1])+
+                        "<br>最大值："+formatNum(distanceStatisticByType[d.key][2])+
+                        "<br>最小值："+formatNum(distanceStatisticByType[d.key][3])+
+                        "<br>点数量："+formatNum(distanceStatisticByType[d.key][4]))
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                    })
+                .append("path")
+              .datum(function (d) {
+                  return (d.value)
+              })     // So now we are working bin per bin
+              .style("stroke", "none")
+              .style("fill", function (d) {
+                  return myColorViolin(count++ % 6);
+              })
+              .attr("d", d3.area()
+                  .x0(xNum(0))
+                  .x1(function (d) {
+                      return (xNum(d.length))
+                  })
+                  .y(function (d) {
+                      return (y((d.x0 + d.x1) / 2))
+                  })
+                  .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
+              );
+
+          // Add individual points with jitter
+          var jitterWidth = 40;
+          svg
+              .selectAll("indPoints")
+              .data(distance_group[dis_i])
+              .enter()
+              .append("circle")
+              .attr("cx", function (d) {
+                  return (x(d[0]) + x.bandwidth() / 2 - Math.random() * jitterWidth)
+              })
+              .attr("cy", function (d) {
+                  return (y(d[type]))
+              })
+              .attr("r", 4)
+              .style("fill", function (d) {
+                  return (myColor(d[type]))
+              })
+              .attr("stroke", "white")
+              .on("mouseover", function (d) {
+                  div4.transition()
+                      .duration(300)
+                      .style("opacity", .9);
+                  let type_str = type === 2 ? "H2 : " : type === 3 ? "NWD : " : "WD : ";
+                  div4.html(type_str + formatNum(d[type]) + "<br>距离: " + formatNum(d[5]))   // [["zone", "electrodes", "h2", "nwd", "wd", "distance"]]
+                      .style("left", (d3.event.pageX) + "px")
+                      .style("top", (d3.event.pageY - 28) + "px");
+              })
+              .on("mouseout", function (d) {
+                  div4.transition()
+                      .duration(500)
+                      .style("opacity", 0);
+              });
+      }else{
+          myViolinDistance.on("mouseover", function (d) {
+              //sessionStorage.setItem("dvalue",d.value);
+            div2.transition()
+                .duration(300)
+                .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
+            div2.html("Q1："+formatNum(distanceStatisticByType[d.key][5])+
+                "<br>Q2："+formatNum(distanceStatisticByType[d.key][0])+
+                "<br>Q3："+formatNum(distanceStatisticByType[d.key][6])+
+                "<br>均值："+formatNum(distanceStatisticByType[d.key][1])+
+                "<br>最大值："+formatNum(distanceStatisticByType[d.key][2]))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+              .append("path")
+            .datum(function(d){ return d.value})     // So now we are working bin per bin
+            .style("stroke", "none")
+            .style("fill",function (d) {
+                return myColorViolin(count++%6);
+            })
+            .attr("d", d3.area()   // 这里的x0表示底，x1表示高，y表示宽
+                .x0( function(d){ return(xNum(-d.length)) } )
+                .x1(function(d){ return(xNum(d.length)) } )
+                .y(function(d){ return(y((d.x0+d.x1)/2)) } )
+                .curve(d3.curveCatmullRom)    // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
+            );
+
+          myViolinDistance.append("rect")
+              .attr("fill","black")
+              .attr("x",x.bandwidth()/2-2)  // 矩形的 (x,y) 是右上角
+              .attr("y",function (d) {
+                  return y(distanceStatisticByType[d.key][6])
+              })
+              .attr("height", function (d) {
+                  return y(distanceStatisticByType[d.key][5]) - y(distanceStatisticByType[d.key][6]);
+              })
+              .attr("width", 4);
+
+          myViolinDistance.append("circle")
+              .attr("cx", x.bandwidth()/2 )
+              .attr("cy", function (d) {
+                  return y(distanceStatisticByType[d.key][0])
+              })
+              .attr("r", 3)
+              .style("fill", "red")
+              .attr("stroke", "red")
+      }
 }
 
 function stream_out_in(data,electrode_names,time,step) {
