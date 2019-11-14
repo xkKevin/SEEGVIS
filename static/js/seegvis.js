@@ -169,8 +169,10 @@ function showCoordinate(files) {
             var relArr = null;
             if (this.result.includes("\r\n")){
                 relArr= this.result.split("\r\n"); // windows 是 回车换行
-            }else{
+            }else if(this.result.includes("\n")){
                 relArr= this.result.split("\n"); // linux 和 mac 是换行
+            }else if(this.result.includes("\r")){
+                relArr= this.result.split("\r"); // 有些 mac 是回车 CR
             }
             //var regp = new RegExp(".*,\".*,.*\"$");
             var regp = /[^\w\s,.-]/;
@@ -183,7 +185,7 @@ function showCoordinate(files) {
                 for (var key = 1, len = relArr.length; key < len; key++) {
                     var values = relArr[key];
                     if (regp.test(values)) {
-                        alert("文件中此行内容含有非法符号，请修改后再上传！\n" + values);
+                        alert("文件中第" + (key+1) + "行内容含有非法符号，请修改后再上传！\n" + values);
                         return;
                     }
                     if (!$.isEmptyObject(values)) {
@@ -191,7 +193,8 @@ function showCoordinate(files) {
                         if (values.includes(",")) {
                             objArr = values.split(",");
                         }else{
-                            objArr = values.split(" ");
+                            // objArr = values.split(" ");
+                            objArr = values.split(/[ ]+/);
                         }
                         /*
                         for (var j=1;j<objArr.length;j++){
@@ -199,11 +202,11 @@ function showCoordinate(files) {
                         }
                         */
                         if (objArr.length >= 5){
-                            if (objArr[4] === "ez"){
+                            if (objArr[4].toUpperCase() === "EZ"){
                                 co_data.ez.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                            } else if (objArr[4] === "pz"){
+                            } else if (objArr[4].toUpperCase() === "PZ"){
                                 co_data.pz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                            }else if (objArr[4] === "niz"){
+                            }else if (objArr[4].toUpperCase() === "NIZ"){
                                 co_data.niz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
                             } else{
                                 co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
@@ -211,7 +214,7 @@ function showCoordinate(files) {
                         }else if(objArr.length == 4){
                             co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
                         }else{
-                            alert("文件中此行内容信息不全，请补全后再上传！\n" + values);
+                            alert("文件中第" + (key+1) + "行内容信息不全，请补全后再上传！\n" + values);
                             return;
                         }
                         if (isInSet(objArr[0],one_elect)){
@@ -490,7 +493,9 @@ function downloadDistanceResult() {
     let rows = [["distance interval","zone", "electrodes", "h2", "nwd", "wd", "distance"]];
     Object.keys(distance_group).forEach(function(key){
         let dis_i = parseInt(key);
-        let di_str = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval);
+        let str_di = distance_interval.toString();
+        let times = str_di.length - str_di.indexOf(".");
+        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
         rows = rows.concat([di_str].concat(distance_group[key]));
     });
     exportToCsv("Distance_Result.csv",rows);
@@ -501,7 +506,9 @@ function downloadDistanceStatistic() {
     let rows=[["distance interval","zone","median","mean","max","min","num", "Q1", "Q2"]];
     Object.keys(distance_group_static).forEach(function(key){
         let dis_i = parseInt(key);
-        let di_str = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval);
+        let str_di = distance_interval.toString();
+        let times = str_di.length - str_di.indexOf(".");
+        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
         if (distance_group_static[key].EZ) rows.push([di_str,"ez"].concat(distance_group_static[key].EZ));
         if (distance_group_static[key].PZ) rows.push([di_str,"pz"].concat(distance_group_static[key].PZ));
         if (distance_group_static[key].NIZ) rows.push([di_str,"niz"].concat(distance_group_static[key].NIZ));

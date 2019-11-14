@@ -404,21 +404,9 @@
     var ez = $("#EZ"), pz = $("#PZ"), niz = $("#NIZ");  // zone 电极输入
     var play_i = showTimeInterval = null;  // 小提琴图的播放
 
-    var div1 = d3.select("body").append("div")  // 折线图的tooltip
-    .attr("class", "tooltip1")  // bootstrap 有自己的tootlip，所以命名需为tooltip1，防止冲突
-    .style("opacity", 0).style("width","80px").style("height","51px");
-
-    var div2 = d3.select("body").append("div")  // 小提琴图的面积tooltip
-    .attr("class", "tooltip1").style("text-align","left")
-    .style("opacity", 0).style("width","96px").style("height","83px"); // 68px
-
-    var div3 = d3.select("body").append("div")  // FC小提琴图的点tooltip
+    var div_tooltip = d3.select("body").append("div")  // 图中的tooltip
     .attr("class", "tooltip1")  //area
-    .style("opacity", 0).style("width","60px").style("height","20px");
-
-    var div4 = d3.select("body").append("div")  // 距离分析小提琴图的点tooltip
-    .attr("class", "tooltip1")  //area
-    .style("opacity", 0).style("width","90px").style("height","38px");
+    .style("opacity", 0);  // 自动调节大小
 
     var show_type_direction = 0; // 3 表示 "nwd" 4 表示 "wd"
 

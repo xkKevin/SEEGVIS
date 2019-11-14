@@ -285,15 +285,15 @@ function linechart(data,signal,lens,nwd,wd,twoElectCo,statistic) {
             return y(d.h2);
         })
         .on("mouseover", function (d) {
-            div1.transition()
+            div_tooltip.transition()
                 .duration(200)
                 .style("opacity", .9);
-            div1.html(d.time+"<br/>h2 : "+formatNum(d.h2)+"<br/>lag : "+d.lag)
+            div_tooltip.html(d.time+"<br/>h2 : "+formatNum(d.h2)+"<br/>lag : "+d.lag)
                 .style("left", (d3.event.pageX - 45) + "px")
                 .style("top", (d3.event.pageY - 53) + "px");
         })
         .on("mouseout", function (d) {
-            div1.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
         });
@@ -506,7 +506,7 @@ function violinBwt() {
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
         .on("mouseout", function (d) {
-            div2.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
         });
@@ -514,10 +514,10 @@ function violinBwt() {
       if($('#violin_status').bootstrapSwitch("state")){
           myViolin.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div2.html("中值："+formatNum(databyType[d.key][0])+
+            div_tooltip.html("中值："+formatNum(databyType[d.key][0])+
                 "<br>均值："+formatNum(databyType[d.key][1])+
                 "<br>最大值："+formatNum(databyType[d.key][2])+
                 "<br>最小值："+formatNum(databyType[d.key][3])+
@@ -551,15 +551,15 @@ function violinBwt() {
               .attr("stroke", "white")
               .on("mouseover", function (d) {
                   //sessionStorage.setItem("dvalue",d.value);
-                div3.transition()
+                div_tooltip.transition()
                     .duration(300)
                     .style("opacity", .9);
-                div3.html(formatNum(d3.median(d[2])))
+                div_tooltip.html(formatNum(d3.median(d[2])))
                     .style("left", (d3.event.pageX) + "px")
                     .style("top", (d3.event.pageY - 28) + "px");
                 })
               .on("mouseout", function (d) {
-                div3.transition()
+                div_tooltip.transition()
                     .duration(500)
                     .style("opacity", 0);
                 })
@@ -574,10 +574,10 @@ function violinBwt() {
       }else{
           myViolin.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
-            div2.html("Q1："+formatNum(databyType[d.key][5])+
+            div_tooltip.html("Q1："+formatNum(databyType[d.key][5])+
                 "<br>Q2："+formatNum(databyType[d.key][0])+
                 "<br>Q3："+formatNum(databyType[d.key][6])+
                 "<br>均值："+formatNum(databyType[d.key][1])+
@@ -745,17 +745,17 @@ function directionality(type) {
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
         .on("mouseout", function (d) {
-            div2.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
         });
       if($('#violin_status').bootstrapSwitch("state")) {
             myViolinDirection.on("mouseover", function (d) {
                       //sessionStorage.setItem("dvalue",d.value);
-                    div2.transition()
+                    div_tooltip.transition()
                         .duration(300)
                         .style("opacity", .9);
-                    div2.html("中值："+formatNum(directionByType[d.key][0])+
+                    div_tooltip.html("中值："+formatNum(directionByType[d.key][0])+
                         "<br>均值："+formatNum(directionByType[d.key][1])+
                         "<br>最大值："+formatNum(directionByType[d.key][2])+
                         "<br>最小值："+formatNum(directionByType[d.key][3])+
@@ -801,25 +801,25 @@ function directionality(type) {
               })
               .attr("stroke", "white")
               .on("mouseover", function (d) {
-                  div3.transition()
+                  div_tooltip.transition()
                       .duration(300)
                       .style("opacity", .9);
-                  div3.html(formatNum(d[type]))
+                  div_tooltip.html(formatNum(d[type]))
                       .style("left", (d3.event.pageX) + "px")
                       .style("top", (d3.event.pageY - 28) + "px");
               })
               .on("mouseout", function (d) {
-                  div3.transition()
+                  div_tooltip.transition()
                       .duration(500)
                       .style("opacity", 0);
               });
       }else{
           myViolinDirection.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
-            div2.html("Q1："+formatNum(directionByType[d.key][5])+
+            div_tooltip.html("Q1："+formatNum(directionByType[d.key][5])+
                 "<br>Q2："+formatNum(directionByType[d.key][0])+
                 "<br>Q3："+formatNum(directionByType[d.key][6])+
                 "<br>均值："+formatNum(directionByType[d.key][1])+
@@ -951,10 +951,10 @@ function subviolinFC(data,zone,electrodes) {
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
           .on("mouseover", function (d) {
-            div2.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);
-            div2.html("中值："+formatNum(d3.median(dataFilter))+
+            div_tooltip.html("中值："+formatNum(d3.median(dataFilter))+
                 "<br>均值："+formatNum(d3.mean(dataFilter))+
                 "<br>最大值："+formatNum(d3.max(dataFilter))+
                 "<br>最小值："+formatNum(d3.min(dataFilter)))
@@ -962,7 +962,7 @@ function subviolinFC(data,zone,electrodes) {
                 .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", function (d) {
-            div2.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
         }).append("path")
@@ -998,16 +998,16 @@ function subviolinFC(data,zone,electrodes) {
           .style("fill", function(d){ return(myColor(d.h2))})
           .attr("stroke", "white")
           .on("mouseover", function (d) {
-            div3.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);
             // div.html(parseFloat(d.h2).toFixed(4))
-            div3.html(formatNum(d.h2))
+            div_tooltip.html(formatNum(d.h2))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
             })
           .on("mouseout", function (d) {
-            div3.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
             });
@@ -1020,8 +1020,9 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
     var margin = {top: 10, right: 20, bottom: 30, left: 50},
         width = 500 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
-
-    let title = (dis_i * distance_interval) + " - " + ((dis_i + 1) * distance_interval) + " cm";
+    let str_di = distance_interval.toString();
+    let times = str_di.length - str_di.indexOf(".");
+    let title = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
 
     div_vis.append("h4")
         .html(title)
@@ -1109,7 +1110,7 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
               return("translate(" + x(d.key) +" ,0)")
           } ) // Translation on the right to be at the group position
         .on("mouseout", function (d) {
-            div2.transition()
+            div_tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
         });
@@ -1117,10 +1118,10 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
       if($('#violin_status2').bootstrapSwitch("state")) {
             myViolinDistance.on("mouseover", function (d) {
                       //sessionStorage.setItem("dvalue",d.value);
-                    div2.transition()
+                    div_tooltip.transition()
                         .duration(300)
                         .style("opacity", .9);
-                    div2.html("中值："+formatNum(distanceStatisticByType[d.key][0])+
+                    div_tooltip.html("中值："+formatNum(distanceStatisticByType[d.key][0])+
                         "<br>均值："+formatNum(distanceStatisticByType[d.key][1])+
                         "<br>最大值："+formatNum(distanceStatisticByType[d.key][2])+
                         "<br>最小值："+formatNum(distanceStatisticByType[d.key][3])+
@@ -1155,7 +1156,7 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
               .enter()
               .append("circle")
               .attr("cx", function (d) {
-                  return (x(d[0]) + x.bandwidth() / 2 - Math.random() * jitterWidth)
+                  return (x(d[0]) + x.bandwidth() / 2 * Math.random())
               })
               .attr("cy", function (d) {
                   return (y(d[type]))
@@ -1166,26 +1167,26 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
               })
               .attr("stroke", "white")
               .on("mouseover", function (d) {
-                  div4.transition()
+                  div_tooltip.transition()
                       .duration(300)
                       .style("opacity", .9);
                   let type_str = type === 2 ? "H2 : " : type === 3 ? "NWD : " : "WD : ";
-                  div4.html(type_str + formatNum(d[type]) + "<br>距离: " + formatNum(d[5]))   // [["zone", "electrodes", "h2", "nwd", "wd", "distance"]]
+                  div_tooltip.html(d[1]+"<br>"+type_str + formatNum(d[type]) + "<br>距离: " + formatNum(d[5]))   // [["zone", "electrodes", "h2", "nwd", "wd", "distance"]]
                       .style("left", (d3.event.pageX) + "px")
                       .style("top", (d3.event.pageY - 28) + "px");
               })
               .on("mouseout", function (d) {
-                  div4.transition()
+                  div_tooltip.transition()
                       .duration(500)
                       .style("opacity", 0);
               });
       }else{
           myViolinDistance.on("mouseover", function (d) {
               //sessionStorage.setItem("dvalue",d.value);
-            div2.transition()
+            div_tooltip.transition()
                 .duration(300)
                 .style("opacity", .9);   // 中值、均值、最大值、最小值、数组长度、Q1、Q3
-            div2.html("Q1："+formatNum(distanceStatisticByType[d.key][5])+
+            div_tooltip.html("Q1："+formatNum(distanceStatisticByType[d.key][5])+
                 "<br>Q2："+formatNum(distanceStatisticByType[d.key][0])+
                 "<br>Q3："+formatNum(distanceStatisticByType[d.key][6])+
                 "<br>均值："+formatNum(distanceStatisticByType[d.key][1])+
