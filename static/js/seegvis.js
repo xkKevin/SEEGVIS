@@ -41,6 +41,48 @@ var currentWidth = $("#nav-1 .system_nav")
 var current = $(".system_nav .active").position();
 $("#nav-1 .slide1").css({ left: +current.left, width: currentWidth });
 
+function distanceChartbyType(e, type) { // type：2, 3, 4
+    $(e).siblings().removeClass("btn-warning").addClass("btn-default");
+    $(e).removeClass("btn-default").addClass("btn-warning");
+    let distance_vis = d3.select("#distance_vis");
+    distance_vis.selectAll("*").remove();
+    distance_group_static = {};
+
+    Object.keys(distance_group).forEach(function(key){
+        let distance_vis_div = distance_vis.append("div").attr("class","distance_vis_div");
+        distanceViolin(distance_vis_div,type,parseInt(key),distance_interval);
+    });
+}
+
+function cal_distance_in(signals, zone) {
+    let result = [];
+    for (let si=0; si<signals.length-1;si++){
+        for (let sj=si+1; sj<signals.length;sj++){
+            let sum = 0;
+            for (let i=0;i<3;i++){
+                sum += Math.pow(two_elect_co[signals[si]][i]-two_elect_co[signals[sj]][i],2);
+            }
+            let distance = Math.sqrt((sum));
+            result.push([zone,[signals[si],signals[sj]],distance]);
+        }
+    }
+    return result;
+}
+
+function cal_distance_bwt(s1,s2,zone) {
+    let result = [];
+    for (let si=0; si<s1.length;si++){
+        for (let sj=0; sj<s2.length;sj++){
+            let sum = 0;
+            for (let i=0;i<3;i++){
+                sum += Math.pow(two_elect_co[s1[si]][i]-two_elect_co[s2[sj]][i],2);
+            }
+            let distance = Math.sqrt((sum));
+            result.push([zone,[s1[si],s2[sj]],distance]);
+        }
+    }
+    return result;
+}
 
 function statisticExceptZero(data) {
     /**
@@ -140,8 +182,10 @@ function readToArray(data) {
     }
 }
 
-function showCoordinate(files) {
-    //console.log(files);
+function showCoordinate(obj) {
+    let files = obj.files;
+    // console.log(files,files[0].name);
+    $("#coordinate_file_name").text("当前坐标文件为：" + files[0].name);
     if (files[0]) {
         var reader = new FileReader();
         reader.readAsText(files[0]);
@@ -211,7 +255,7 @@ function showCoordinate(files) {
                             } else{
                                 co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
                             }
-                        }else if(objArr.length == 4){
+                        }else if(objArr.length === 4){
                             co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
                         }else{
                             alert("文件中第" + (key+1) + "行内容信息不全，请补全后再上传！\n" + values);
@@ -241,7 +285,6 @@ function showCoordinate(files) {
             two_elect_co.length = 0;
             for(var ii=0;ii<electrode_names.length;ii++){
                 let [one_e,second_e] = electrode_names[ii].split("-");
-                //console.log(one_e)
                 two_elect_co.push(centerPoint(one_elect_co[one_e],one_elect_co[second_e]));
 
                 var flag = true;
@@ -253,7 +296,7 @@ function showCoordinate(files) {
                     }
                 }
                 if (flag){
-                    for (var jj=0;jj<co_data["pz"].length;jj++){
+                    for (let jj=0;jj<co_data["pz"].length;jj++){
                         if (co_data["pz"][jj][3].includes(one_e)){
                             pz_p.push(ii);
                             flag = false;
@@ -262,7 +305,7 @@ function showCoordinate(files) {
                     }
                 }
                 if (flag){
-                    for (var jj=0;jj<co_data["niz"].length;jj++){
+                    for (let jj=0;jj<co_data["niz"].length;jj++){
                         if (co_data["niz"][jj][3].includes(one_e)){
                             niz_p.push(ii);
                             //flag = false;
@@ -274,6 +317,7 @@ function showCoordinate(files) {
             //console.log(ez_p,pz_p,niz_p)
         };
     }
+    obj.value = '';
 }
 function assignZone() {
     if (one_elect.size === 0){
@@ -321,15 +365,15 @@ function strArr2floatArr(strArr) {
     }
     return floatArr;
 }
+/*
 function twoElectCO(signal,co) {
-    /*
-     返回电极对的中心坐标
-     signal的格式例如： ['C4-C5', 'C6-C7']
-      */
+     // 返回电极对的中心坐标
+     // signal的格式例如： ['C4-C5', 'C6-C7']
     var s1 = signal[0].split('-');
     var s2 = signal[1].split('-');
     return [centerPoint(co[s1[0]],co[s1[1]]),centerPoint(co[s2[0]],co[s2[1]])]
 }
+*/
 function centerPoint(co1,co2) {
     if (!(co1&&co2)){
         return null;
@@ -495,7 +539,7 @@ function downloadDistanceResult() {
         let dis_i = parseInt(key);
         let str_di = distance_interval.toString();
         let times = str_di.length - str_di.indexOf(".");
-        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
+        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " mm";
         rows = rows.concat([di_str].concat(distance_group[key]));
     });
     exportToCsv("Distance_Result.csv",rows);
@@ -508,7 +552,7 @@ function downloadDistanceStatistic() {
         let dis_i = parseInt(key);
         let str_di = distance_interval.toString();
         let times = str_di.length - str_di.indexOf(".");
-        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
+        let di_str = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " mm";
         if (distance_group_static[key].EZ) rows.push([di_str,"ez"].concat(distance_group_static[key].EZ));
         if (distance_group_static[key].PZ) rows.push([di_str,"pz"].concat(distance_group_static[key].PZ));
         if (distance_group_static[key].NIZ) rows.push([di_str,"niz"].concat(distance_group_static[key].NIZ));

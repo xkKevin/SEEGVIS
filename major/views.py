@@ -25,6 +25,9 @@ def index(request):
                         delete_key.append(key)
                 for key_i in delete_key:
                     del matDataList[key_i]
+                    out_result = "static/data/out_result_" + key_i + ".xls"
+                    if os.path.exists(out_result):
+                        os.remove(out_result)
                 # return render(request, "index.html", {"msg": json.dumps("会话已过期，请刷新界面或重新上传mat文件！"),"userid": '0'})
 
             file_obj = request.FILES.get("up_file")
@@ -461,7 +464,7 @@ def out_in(userid, select_s, select_l, h2_threshold, select_ei):
     electrode_names, start, step = matDataList[userid]['electrode_names'], matDataList[userid]['start'], matDataList[userid]['step']
     data = pd.DataFrame(np.c_[out_links,in_links], index=[start + step * i for i in range(select_s, select_s + select_l)],
                         columns=[np.r_[['OUT'] * enum, ['IN'] * enum],[electrode_names[i] for i in select_ei] * 2])
-    data.to_excel("static/data/out_result.xls")
+    data.to_excel("static/data/out_result_" + userid + ".xls")
     return out_links, in_links
     # JsonResponse({'out': out_links, 'in': out_links})
 
@@ -533,5 +536,8 @@ def exitSystem(request):
         if userid in matDataList:
             del matDataList[userid]
             # print(matDataList.keys())
+            out_result = "static/data/out_result_" + userid + ".xls"
+            if os.path.exists(out_result):
+                os.remove(out_result)
         return JsonResponse({"result": "True"})
     return JsonResponse({"result": "False"})

@@ -221,9 +221,10 @@
 <div class="system_module"  style="display: none;">
     <div style="padding-left: 20px;">
         请上传对应电极点的空间坐标：<input type="file" accept=".txt,.csv" id="coordinate_file" class="button"
-                             onchange="showCoordinate(this.files)"/>
+                             onchange="showCoordinate(this)"/>
+        <span id="coordinate_file_name"></span>
     </div>
-    <div id="electrodes"></div>
+    <div id="electrodes" style="margin-top: 10px;"></div>
 </div>
 
 <div class="system_module" style="display: none;" align="center">
@@ -313,7 +314,7 @@
             <td style="padding-left: 10px;">
                 <div class="input-group">
 {#                    <span class="input-group-addon">距离间隔大小（cm）</span>#}
-                    <input class="form-control" type="text" id="distance_interval" onkeyup="value=value.replace(/[^.\d]/g,'')" placeholder="请输入距离间隔（cm）" style="width: 165px;">
+                    <input class="form-control" type="text" id="distance_interval" onkeyup="value=value.replace(/[^.\d]/g,'')" placeholder="请输入距离间隔（mm）" style="width: 168px;">
                     <label class="input-group-addon btn btn-success" onclick="distanceAnalyse()">提交</label>
                 </div>
             </td>
@@ -341,7 +342,7 @@
         <span id="out_links"></span><br>
         IN LINKS:<br>
         <span id="in_links"></span><br>
-        <a href="/static/data/out_result.xls">下载&nbsp;OUT&nbsp;分析结果</a>
+        <a id="out_result_dl" href="static/data/out_result_{{ userid }}.xls" download="out_result" style="cursor: pointer;">下载&nbsp;OUT&nbsp;分析结果</a>
         <a id="out_result_s" style="margin-left: 20px;visibility: hidden;cursor: pointer;" onclick="downloadOUTStatistic()">下载区域统计结果</a>
         <hr style="margin-top: 6px; margin-bottom: 18px;">
     </div>
@@ -734,7 +735,7 @@ function getH2() {
                 for(i=0;i<lens;i++){
                     data.push({"time":select_start + i * fc_info.step,"h2":s1_s2[0][0][i], "lag":s1_s2[0][1][i]})
                 }
-                linechart(data,signal,lens,s1_s2[0][2],s1_s2[0][3],twoElectCO(signal,one_elect_co),{
+                linechart(data,signal,lens,s1_s2[0][2],s1_s2[0][3],[two_elect_co[s1],two_elect_co[s2]],{   // twoElectCO(signal,one_elect_co)
                     "median": [s1_s2[1][0],s1_s2[2][0],s1_s2[3][0]],
                     "mean": [s1_s2[1][1],s1_s2[2][1],s1_s2[3][1]],
                     "max": [s1_s2[1][2],s1_s2[2][2],s1_s2[3][2]],
@@ -988,13 +989,13 @@ function violin_play() {
     showTimeInterval=setInterval(fc_play,1500);
 }
 function violin_pause(obj) {
-    if ($("#lastTime").css("visibility") == "hidden"){
+    if ($("#lastTime").css("visibility") === "hidden"){
         alert("请先播放！");
         return;
     }
     let type = $(obj).text();
     //console.log(type);
-    if (type == "暂停"){
+    if (type === "暂停"){
         clearInterval(showTimeInterval);
         $(obj).text("继续");
     }else {
@@ -1003,10 +1004,10 @@ function violin_pause(obj) {
     }
 }
 function last_time() {
-    if (play_i == select_start){
+    if (play_i === select_start){
         play_i = select_end - fc_info.step;
 
-    } else if(play_i - fc_info.step == select_start){
+    } else if(play_i - fc_info.step === select_start){
         play_i = select_end;
     } else {
         play_i -= fc_info.step * 2;
@@ -1036,7 +1037,7 @@ function fc_play() {
                 violinTimeDiv.css("display","inline");
                 violinTimeSpan.text(play_i);
 
-                if (play_i == select_end){
+                if (play_i === select_end){
                     play_i = select_start;
                 } else{
                     play_i += fc_info.step;
@@ -1092,58 +1093,28 @@ function distanceAnalyse() {
     });
 }
 
-function distanceChartbyType(e, type) { // type：2, 3, 4
-    $(e).siblings().removeClass("btn-warning").addClass("btn-default");
-    $(e).removeClass("btn-default").addClass("btn-warning");
-    let distance_vis = d3.select("#distance_vis");
-    distance_vis.selectAll("*").remove();
-    distance_group_static = {};
-
-    Object.keys(distance_group).forEach(function(key){
-        let distance_vis_div = distance_vis.append("div").attr("class","distance_vis_div");
-        distanceViolin(distance_vis_div,type,parseInt(key),distance_interval);
-    });
-
-}
-
-function cal_distance_in(signals, zone) {
-    let result = [];
-    for (let si=0; si<signals.length-1;si++){
-        for (let sj=si+1; sj<signals.length;sj++){
-            let sum = 0;
-            for (let i=0;i<3;i++){
-                sum += Math.pow(two_elect_co[signals[si]][i]-two_elect_co[signals[sj]][i],2);
-            }
-            let distance = Math.sqrt((sum));
-            result.push([zone,[signals[si],signals[sj]],distance]);
-        }
-    }
-    return result;
-}
-
-function cal_distance_bwt(s1,s2,zone) {
-    let result = [];
-    for (let si=0; si<s1.length;si++){
-        for (let sj=0; sj<s2.length;sj++){
-            let sum = 0;
-            for (let i=0;i<3;i++){
-                sum += Math.pow(two_elect_co[s1[si]][i]-two_elect_co[s2[sj]][i],2);
-            }
-            let distance = Math.sqrt((sum));
-            result.push([zone,[s1[si],s2[sj]],distance]);
-        }
-    }
-    return result;
-}
-
 //监测页面退出事件
-window.onbeforeunload = function() {
+function windowBeforeUnload() {
    $.ajax({
       type: "GET",
       data: { "userid": userid },
       url: "{% url 'exitSystem' %}",
       async: false
     });
-};
+}
+
+$(window).on('beforeunload', windowBeforeUnload);
+
+$("#out_result_dl").mousedown(function(){
+        $(window).off('beforeunload');
+    }).mouseleave(function(){
+        $(window).on('beforeunload',windowBeforeUnload);
+    });
+/*
+function downloadOutResult() {
+    window.open("static/data/out_result.xls");
+    // window.location.href = "新页面";
+}
+*/
 </script>
 </html>

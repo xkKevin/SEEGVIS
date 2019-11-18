@@ -1022,7 +1022,7 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
         height = 300 - margin.top - margin.bottom;
     let str_di = distance_interval.toString();
     let times = str_di.length - str_di.indexOf(".");
-    let title = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " cm";
+    let title = parseFloat((distance_interval * dis_i).toFixed(times)) + " - " + parseFloat((distance_interval * (dis_i + 1)).toFixed(times)) + " mm";
 
     div_vis.append("h4")
         .html(title)
@@ -1037,10 +1037,10 @@ function distanceViolin(div_vis,type,dis_i,distance_interval){
               "translate(" + margin.left + "," + margin.top + ")");
 
     let dataFilter = distance_group[dis_i].map(function(d){return d[type] });
-    let data_max = d3.max(dataFilter) * 1.2;
-    let max_y = data_max > 1 ? 1 : data_max;
+    let data_max = d3.max(dataFilter);
+    let max_y = data_max < 0 ? 0 : 0.2 + 0.8 * data_max > 1 ? 1 : 0.2 + 0.8 * data_max;  // data_max + (1 - data_max) * 0.2
     let data_min = d3.min(dataFilter);
-    let min_y = data_min >= 0 ? 0 : data_min * 1.2 < -1 ? -1 : data_min * 1.2;
+    let min_y = data_min > 0 ? 0 : 0.8 * data_min - 0.2 < -1 ? -1 : 0.8 * data_min - 0.2;  // 0 : data_min - (1 + data_min) * 0.2
 
       var y = d3.scaleLinear()
         .domain([min_y, max_y])          // Note that here the Y scale is set manually
