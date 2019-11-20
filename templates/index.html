@@ -1077,8 +1077,15 @@ function distanceAnalyse() {
         alert("请输入距离间隔！");
         return;
     }
-    let elects_distance = cal_distance_in(ez_u, "EZ").concat(cal_distance_in(pz_u, "PZ")).concat(cal_distance_in(niz_u, "NIZ")).
+    let elects_distance;
+    try{
+        elects_distance = cal_distance_in(ez_u, "EZ").concat(cal_distance_in(pz_u, "PZ")).concat(cal_distance_in(niz_u, "NIZ")).
         concat(cal_distance_bwt(ez_u,pz_u,"EZ_PZ")).concat(cal_distance_bwt(ez_u,niz_u,"EZ_NIZ")).concat(cal_distance_bwt(pz_u,niz_u,"PZ_NIZ"));
+    }catch (e) {
+        alert("存在异常坐标！\n"+e.message);
+        return;
+    }
+
     $.post('{% url 'distanceAnalyse' %}',{"userid":userid,"elects_distance":JSON.stringify(elects_distance),
             "distance_interval":distance_interval,"select_start":select_start,"select_end":select_end, "h2_threshold":h2_threshold},
         function(result, statue){

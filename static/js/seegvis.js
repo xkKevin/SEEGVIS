@@ -219,7 +219,7 @@ function showCoordinate(obj) {
                 relArr= this.result.split("\r"); // 有些 mac 是回车 CR
             }
             //var regp = new RegExp(".*,\".*,.*\"$");
-            var regp = /[^\w\s,.-]/;
+            var regp = /[^\w\s,.'_-]/;
             if (!$.isEmptyObject(relArr) && relArr.length > 1) {
                 for (var cokey in one_elect_co){
                     //delete one_elect_co.cokey; 清空字典，只能使用下面的方法
@@ -235,7 +235,7 @@ function showCoordinate(obj) {
                     if (!$.isEmptyObject(values)) {
                         var objArr = null;  // electrode x y z type (type可以为空)
                         if (values.includes(",")) {
-                            objArr = values.split(",");
+                            objArr = values.split(",").map((d) => d.trim());  // 去除空白字符串
                         }else{
                             // objArr = values.split(" ");
                             objArr = values.split(/[ ]+/);
@@ -245,24 +245,40 @@ function showCoordinate(obj) {
                             obj.push(objArr[j].replace(/\s/ig,'')); //过滤空白字符
                         }
                         */
-                        if (objArr.length >= 5){
-                            if (objArr[4].toUpperCase() === "EZ"){
-                                co_data.ez.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                            } else if (objArr[4].toUpperCase() === "PZ"){
-                                co_data.pz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                            }else if (objArr[4].toUpperCase() === "NIZ"){
-                                co_data.niz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                            } else{
+                        if (objArr.length >= 4){
+                            for (let ri=0; ri<4; ri++){
+                                if (!objArr[ri]){
+                                    alert("文件中第" + (key+1) + "行第" + (ri+1) + "个位置为空，请补全信息后再上传！\n" + values);
+                                    return;
+                                }
+                            }
+                            if (objArr.length >= 5){
+                                if (objArr[4].toUpperCase() === "EZ"){
+                                    co_data.ez.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                                } else if (objArr[4].toUpperCase() === "PZ"){
+                                    co_data.pz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                                }else if (objArr[4].toUpperCase() === "NIZ"){
+                                    co_data.niz.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                                } else{
+                                    co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
+                                }
+                            }else {
                                 co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
                             }
-                        }else if(objArr.length === 4){
-                            co_data.unknown.push([objArr[1],objArr[2],objArr[3],objArr[0]]);
-                        }else{
+                        } else {
                             alert("文件中第" + (key+1) + "行内容信息不全，请补全后再上传！\n" + values);
                             return;
                         }
+
                         if (isInSet(objArr[0],one_elect)){
-                            one_elect_co[objArr[0]] = [parseFloat(objArr[1]),parseFloat(objArr[2]),parseFloat(objArr[3])];
+                            let co_xyz = [parseFloat(objArr[1]),parseFloat(objArr[2]),parseFloat(objArr[3])];
+                            for (let ci=0; ci<3; ci++){
+                                if (isNaN(co_xyz[ci])){
+                                    alert("文件中第" + (key+1) + "行信息有误！\n" + values);
+                                    return;
+                                }
+                            }
+                            one_elect_co[objArr[0]] = co_xyz;
                         }
                     }
                 }
@@ -284,12 +300,12 @@ function showCoordinate(obj) {
             //console.log(co_data)
             two_elect_co.length = 0;
             for(var ii=0;ii<electrode_names.length;ii++){
-                let [one_e,second_e] = electrode_names[ii].split("-");
-                two_elect_co.push(centerPoint(one_elect_co[one_e],one_elect_co[second_e]));
+                let [first_e,second_e] = electrode_names[ii].split("-");
+                two_elect_co.push(centerPoint(one_elect_co[first_e],one_elect_co[second_e]));
 
-                var flag = true;
+                let flag = true;
                 for (let jj=0;jj<co_data["ez"].length;jj++){
-                    if (co_data["ez"][jj][3].includes(one_e)){
+                    if (co_data["ez"][jj][3] === second_e){   // 不能用 includes ！！！
                         ez_p.push(ii);
                         flag = false;
                         break;
@@ -297,7 +313,7 @@ function showCoordinate(obj) {
                 }
                 if (flag){
                     for (let jj=0;jj<co_data["pz"].length;jj++){
-                        if (co_data["pz"][jj][3].includes(one_e)){
+                        if (co_data["pz"][jj][3] === second_e){
                             pz_p.push(ii);
                             flag = false;
                             break;
@@ -306,7 +322,7 @@ function showCoordinate(obj) {
                 }
                 if (flag){
                     for (let jj=0;jj<co_data["niz"].length;jj++){
-                        if (co_data["niz"][jj][3].includes(one_e)){
+                        if (co_data["niz"][jj][3] === second_e){
                             niz_p.push(ii);
                             //flag = false;
                             break;
