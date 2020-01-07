@@ -376,7 +376,30 @@
         <div id="out_in_heat" style="display: inline-block;height: 500px; width: 40%; min-width: 600px"></div>
         -->
         <div id="out_in_river" style="width: 58%; float: left"></div>
-        <div id="out_in_heat" style="width: 42%; float: left"></div>
+        <div style="width: 42%; float: left" align="center">
+            <table>
+                <tbody>
+                <tr>
+                    <td style="padding-right: 10px;">
+                        <div class="input-group">
+                            <span class="input-group-addon">min</span>
+                            <input class="form-control" type="text" id="bar_min" onkeyup="value=value.replace(/[^-.\d]/g,'')" style="width: 5em;">
+                        </div>
+                    </td>
+                    <td style="padding-right: 10px">
+                        <div class="input-group">
+                            <span class="input-group-addon">max</span>
+                            <input class="form-control" type="text" id="bar_max" onkeyup="value=value.replace(/[^.\d]/g,'')" style="width: 5em;">
+                        </div>
+                    </td>
+                    <td>
+                        <label class="btn btn-success" onclick="reset_heatmap()">重绘</label>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div id="out_in_heat"></div>
+        </div>
     </div>
 </div>
 
@@ -805,6 +828,11 @@ var outAnalyseType;  // 四种分析类型
 var download_zone_data = [];  // ["TIME", "EZ","PZ","NIZ","UNKNOWN"]
 var download_FC_data=[];  // [{"zone":, "electrodes":, "h2":, "nwd":, "wd":}, ...]
 var type_note; // 字符串，说明是何种out分析，及何种统计分析 eg："OUT --- median"
+
+var out_analyse_heat_data;
+var out_analyse_y_names;
+var out_analyse_x_time;
+
 function outAnalyse(e, type) {
     if(!fc_info){
         alert("请先上传.mat数据文件!");
@@ -832,7 +860,7 @@ function outAnalyse(e, type) {
                 // console.log(out_in_links, links);
                 let select_electrode_names = [];
                 let stream_data = [];
-                let heap_data = [];
+                out_analyse_heat_data = [];
                 let len_t = out_links.length;
                 let len_e = out_links[0].length;
                 let min = 0;
@@ -845,7 +873,7 @@ function outAnalyse(e, type) {
                 zone_data = [];
                 /*
                 zone_stream_data = [];
-                zone_heap_data = [];
+                zone_heat_data = [];
                 zone_data_max = 0; zone_data_min = 0; // 存放以上两个变量的最大值与最小值
                 */
                 for (let i = 0; i < len_t; i++) {  // i 是时间
@@ -878,7 +906,7 @@ function outAnalyse(e, type) {
                         }
 
                         stream_data.push([t, value, select_electrode_names[j]]);
-                        heap_data.push([i, len_e - j - 1, value]);
+                        out_analyse_heat_data.push([i, len_e - j - 1, value]);
                         if (value > max) {
                             max = value;
                         } else if (value < min) {
@@ -894,10 +922,14 @@ function outAnalyse(e, type) {
                     }
                 }
                 // console.log(stream_data);
-                // console.log(heap_data);
+                // console.log(heat_data);
                 $("#out_chart").css("display","block");
+                $("#bar_min").val(min);
+                $("#bar_max").val(max);
                 stream_out_in(stream_data,select_electrode_names, [select_start, select_end], step);
-                heat_out_in(heap_data, min, max, select_electrode_names.concat().reverse(), d3.range(select_start,select_end+step,step));
+                out_analyse_y_names = select_electrode_names.concat().reverse();
+                out_analyse_x_time = d3.range(select_start,select_end+step,step);
+                heat_out_in(out_analyse_heat_data, min, max, out_analyse_y_names, out_analyse_x_time);
             } else{
                 alert("Failed!\n message:"+result["msg"]);
             }
@@ -923,7 +955,7 @@ function outZoneAnalyse() { // type种类为：中值、均值、总和  median�
     let type = $("#zone_analyse_type").val();
     let ez_r,pz_r,niz_r,unk_r,min,max;
     let zone_stream_data = []; // 每个元素为：[时间，值，区域]，如：[100, 18, "EZ"]
-    let zone_heap_data = []; // 每个元素为：[横坐标，纵坐标，值]，如：[1, 3, 20]
+    out_analyse_heat_data = []; // 每个元素为：[横坐标，纵坐标，值]，如：[1, 3, 20]
 
     download_zone_data = [];
     for (let i = 0; i < zone_data.length; i++) {  // i 是时间下标
@@ -937,18 +969,20 @@ function outZoneAnalyse() { // type种类为：中值、均值、总和  median�
         zone_stream_data.push([t, ez_r, "EZ"]);
         zone_stream_data.push([t, pz_r, "PZ"]);
         zone_stream_data.push([t, niz_r, "NIZ"]);
-        zone_stream_data.push([t, unk_r, "UNKNOWN"]);
+        // zone_stream_data.push([t, unk_r, "UNKNOWN"]);
 
-        zone_heap_data.push([i, 3, ez_r]);
-        zone_heap_data.push([i, 2, pz_r]);
-        zone_heap_data.push([i, 1, niz_r]);
-        zone_heap_data.push([i, 0, unk_r]);
+        out_analyse_heat_data.push([i, 2, ez_r]);
+        out_analyse_heat_data.push([i, 1, pz_r]);
+        out_analyse_heat_data.push([i, 0, niz_r]);
+        // zone_heat_data.push([i, 0, unk_r]);
 
         download_zone_data.push([t,ez_r,pz_r,niz_r,unk_r]);
     }
 
-    max = d3.max(zone_heap_data.map( d => d[2]));
-    min = d3.min(zone_heap_data.map( d => d[2]));
+    max = d3.max(out_analyse_heat_data.map(d => d[2]));
+    min = d3.min(out_analyse_heat_data.map(d => d[2]));
+    $("#bar_min").val(min);
+    $("#bar_max").val(max);
     if (outAnalyseType === 'OUT-IN'){
         for (let i = 0; i < zone_stream_data.length; i++) {
             zone_stream_data[i][1] -= min;
@@ -956,8 +990,12 @@ function outZoneAnalyse() { // type种类为：中值、均值、总和  median�
     }
     $("#out_in_river").css("height",450);
     $("#out_in_heat").css("height",420);
-    stream_out_in(zone_stream_data,["EZ", "PZ", "NIZ", "UNKNOWN"], [select_start, select_end], fc_info.step);
-    heat_out_in(zone_heap_data, min, max, ["UNKNOWN", "NIZ", "PZ", "EZ"], d3.range(select_start, select_end + fc_info.step, fc_info.step));
+    // stream_out_in(zone_stream_data,["EZ", "PZ", "NIZ", "UNKNOWN"], [select_start, select_end], fc_info.step);
+    stream_out_in(zone_stream_data,["EZ", "PZ", "NIZ"], [select_start, select_end], fc_info.step);
+    // heat_out_in(zone_heat_data, min, max, ["UNKNOWN", "NIZ", "PZ", "EZ"], d3.range(select_start, select_end + fc_info.step, fc_info.step));
+    out_analyse_y_names = ["NIZ", "PZ", "EZ"];
+    out_analyse_x_time = d3.range(select_start, select_end + fc_info.step, fc_info.step);
+    heat_out_in(out_analyse_heat_data, min, max, out_analyse_y_names, out_analyse_x_time);
     // console.log(zone_data);
     type_note = outAnalyseType + " --- " + type;
     $("#out_result_s").css("visibility","visible").text("下载 "+type_note+" 区域统计结果");

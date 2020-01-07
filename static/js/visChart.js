@@ -1407,3 +1407,13 @@ function heat_out_in(data,min,max,electrode_names,time) {
         myChart.setOption(option, true);
     }
 }
+
+function reset_heatmap() {
+    let min = parseFloat($("#bar_min").val());
+    let max = parseFloat($("#bar_max").val());
+    if (max < min){
+        alert("max不能小于min！")
+    }else{
+        heat_out_in(out_analyse_heat_data, min, max, out_analyse_y_names, out_analyse_x_time);
+    }
+}

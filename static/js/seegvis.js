@@ -303,28 +303,48 @@ function showCoordinate(obj) {
                 let [first_e,second_e] = electrode_names[ii].split("-");
                 two_elect_co.push(centerPoint(one_elect_co[first_e],one_elect_co[second_e]));
 
-                let flag = true;
+                let first_flag = false;
+                let second_flag = false;
                 for (let jj=0;jj<co_data["ez"].length;jj++){
-                    if (co_data["ez"][jj][3] === second_e){   // 不能用 includes ！！！
+                    if (!first_flag && co_data["ez"][jj][3] === first_e) {  //不能用 includes ！！！
+                        first_flag = true;
+                    }
+                    if (!second_flag && co_data["ez"][jj][3] === second_e) {
+                        second_flag = true;
+                    }
+                    if (first_flag && second_flag){
                         ez_p.push(ii);
-                        flag = false;
                         break;
                     }
                 }
-                if (flag){
+                if (!first_flag || !second_flag){   // 两者中只要有一个为 false，就说明 此双极通道不属于上一个类型。
+                    first_flag = false;
+                    second_flag = false;
                     for (let jj=0;jj<co_data["pz"].length;jj++){
-                        if (co_data["pz"][jj][3] === second_e){
+                        if (!first_flag && co_data["pz"][jj][3] === first_e) {  //不能用 includes ！！！
+                            first_flag = true;
+                        }
+                        if (!second_flag && co_data["pz"][jj][3] === second_e) {
+                            second_flag = true;
+                        }
+                        if (first_flag && second_flag){
                             pz_p.push(ii);
-                            flag = false;
                             break;
                         }
                     }
                 }
-                if (flag){
+                if (!first_flag || !second_flag){
+                    first_flag = false;
+                    second_flag = false;
                     for (let jj=0;jj<co_data["niz"].length;jj++){
-                        if (co_data["niz"][jj][3] === second_e){
+                        if (!first_flag && co_data["niz"][jj][3] === first_e) {  //不能用 includes ！！！
+                            first_flag = true;
+                        }
+                        if (!second_flag && co_data["niz"][jj][3] === second_e) {
+                            second_flag = true;
+                        }
+                        if (first_flag && second_flag){
                             niz_p.push(ii);
-                            //flag = false;
                             break;
                         }
                     }
