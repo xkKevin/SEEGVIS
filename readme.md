@@ -69,3 +69,6 @@ Python 3.7.x
 > Please delete the last comma in this code: `'%s=%s' % (k, v) for k, v in params.items(),`  [reference link](https://blog.csdn.net/qq_28311921/article/details/88898741)
 > Then repeat the step 5.
 
+#### Data Description
+
+![data_description](/data/data_description.png)
